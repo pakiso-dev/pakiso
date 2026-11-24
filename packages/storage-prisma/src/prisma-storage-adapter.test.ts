@@ -1,0 +1,103 @@
+import { execFileSync } from 'node:child_process';
+import { existsSync, rmSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { ConcurrencyConflictError } from '@causal/core';
+import { runStorageConformanceTests } from '@causal/core/testing';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { PrismaClient } from '../generated/sqlite/index.js';
+import { PrismaStorageAdapter } from './prisma-storage-adapter.js';
+
+const packageRoot = fileURLToPath(new URL('..', import.meta.url));
+const dbPath = fileURLToPath(new URL('../generated/sqlite/test.db', import.meta.url));
+const databaseUrl = `file:${dbPath}`;
+
+let prisma: PrismaClient;
+
+beforeAll(() => {
+  if (existsSync(dbPath)) {
+    rmSync(dbPath);
+  }
+  execFileSync(
+    'npx',
+    ['prisma', 'db', 'push', '--schema=prisma/sqlite.prisma', '--skip-generate', '--force-reset'],
+    { cwd: packageRoot, env: { ...process.env, CAUSAL_DATABASE_URL: databaseUrl }, stdio: 'pipe' },
+  );
+  prisma = new PrismaClient({ datasourceUrl: databaseUrl });
+}, 30_000);
+
+afterAll(async () => {
+  await prisma.$disconnect();
+  if (existsSync(dbPath)) {
+    rmSync(dbPath);
+  }
+});
+
+async function freshAdapter(): Promise<PrismaStorageAdapter> {
+  await prisma.causalEvent.deleteMany();
+  await prisma.causalRun.deleteMany();
+  return new PrismaStorageAdapter(prisma);
+}
+
+runStorageConformanceTests({ createAdapter: freshAdapter });
+
+describe('PrismaStorageAdapter (SQLite)', () => {
+  it('enforces the expectedSeq optimistic concurrency guard under real concurrent writers', async () => {
+    const adapter = await freshAdapter();
+    const { run } = await adapter.createOrGetRun({ workflowName: 'wf', input: {} });
+
+    const results = await Promise.allSettled([
+      adapter.appendEvent({
+        runId: run.id,
+        expectedSeq: 0,
+        type: 'STEP_COMPLETED',
+        stepName: 'a',
+        payload: {},
+      }),
+      adapter.appendEvent({
+        runId: run.id,
+        expectedSeq: 0,
+        type: 'STEP_COMPLETED',
+        stepName: 'b',
+        payload: {},
+      }),
+    ]);
+
+    const fulfilled = results.filter((r) => r.status === 'fulfilled');
+    const rejected = results.filter((r) => r.status === 'rejected');
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect((rejected[0] as PromiseRejectedResult).reason).toBeInstanceOf(ConcurrencyConflictError);
+
+    const events = await adapter.getEvents(run.id);
+    expect(events).toHaveLength(1);
+  });
+
+  it('persists output as null (Prisma.DbNull) until updateRunStatus sets it', async () => {
+    const adapter = await freshAdapter();
+    const { run } = await adapter.createOrGetRun({ workflowName: 'wf', input: {} });
+
+    const fetched = await adapter.getRun(run.id);
+    expect(fetched?.output).toBeNull();
+
+    const updated = await adapter.updateRunStatus({
+      runId: run.id,
+      status: 'COMPLETED',
+      output: { ok: true },
+    });
+    expect(updated.output).toEqual({ ok: true });
+  });
+
+  it('accepts an explicit null output in updateRunStatus (e.g. a cancelled run)', async () => {
+    const adapter = await freshAdapter();
+    const { run } = await adapter.createOrGetRun({ workflowName: 'wf', input: {} });
+
+    const updated = await adapter.updateRunStatus({
+      runId: run.id,
+      status: 'CANCELLED',
+      output: null,
+    });
+
+    expect(updated.status).toBe('CANCELLED');
+    expect(updated.output).toBeNull();
+  });
+});

@@ -1,0 +1,50 @@
+// Causal storage schema — MySQL dialect.
+// Kept byte-for-byte identical in model shape to sqlite.prisma and
+// postgresql.prisma (only `datasource`/`generator` differ) so the generated
+// TypeScript client types — and therefore PrismaStorageAdapter — are
+// interchangeable across dialects.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/mysql"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("CAUSAL_DATABASE_URL")
+}
+
+model CausalRun {
+  id             String   @id @default(uuid(7))
+  workflowName   String
+  correlationKey String?
+  idempotencyKey String?
+  status         String
+  input          Json
+  output         Json?
+  error          String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  events CausalEvent[]
+
+  @@unique([workflowName, idempotencyKey])
+  @@index([workflowName, correlationKey])
+  @@map("causal_runs")
+}
+
+model CausalEvent {
+  id         String   @id @default(uuid())
+  runId      String
+  seq        Int
+  type       String
+  stepName   String?
+  durationMs Int?
+  payload    Json
+  createdAt  DateTime @default(now())
+
+  run CausalRun @relation(fields: [runId], references: [id])
+
+  @@unique([runId, seq])
+  @@map("causal_events")
+}
