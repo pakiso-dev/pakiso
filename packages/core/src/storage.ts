@@ -36,6 +36,12 @@ export interface CausalRunRecord<
   error: string | null;
   createdAt: Date;
   updatedAt: Date;
+  /**
+   * Deadline for the attestation gate currently being awaited (Phase 4: auto-
+   * escalation), set when `status` transitions to `WAITING_ATTESTATION` via
+   * `AttestationOptions.expiresAt`. Null when not awaiting a deadlined gate.
+   */
+  attestationExpiresAt: Date | null;
 }
 
 export interface CausalEventRecord<TPayload = Record<string, unknown>> {
@@ -73,6 +79,8 @@ export interface UpdateRunStatusParams {
   status: CausalRunStatus;
   output?: Record<string, unknown> | null;
   error?: string | null;
+  /** Set alongside a transition to WAITING_ATTESTATION when the gate has a deadline; cleared (null) otherwise */
+  attestationExpiresAt?: Date | null;
 }
 
 export interface AcquireLeaseParams {
@@ -121,4 +129,12 @@ export interface CausalStorageAdapter {
 
   /** Releases a previously acquired lease; a no-op if not currently held by `leaseOwner`. */
   releaseLease?(params: ReleaseLeaseParams): Promise<void>;
+
+  /**
+   * Returns every run currently `WAITING_ATTESTATION` whose
+   * `attestationExpiresAt` deadline is at or before `now` — used to
+   * auto-escalate/expire overdue approvals. Optional; adapters that omit it
+   * simply don't support deadline enforcement.
+   */
+  findExpiredWaitingRuns?(now: Date): Promise<CausalRunRecord[]>;
 }

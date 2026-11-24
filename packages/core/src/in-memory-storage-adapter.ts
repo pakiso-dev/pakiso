@@ -47,6 +47,7 @@ export class InMemoryStorageAdapter implements CausalStorageAdapter {
       error: null,
       createdAt: now,
       updatedAt: now,
+      attestationExpiresAt: null,
     };
 
     this.runsById.set(run.id, run);
@@ -128,11 +129,24 @@ export class InMemoryStorageAdapter implements CausalStorageAdapter {
       status: params.status,
       output: params.output !== undefined ? params.output : run.output,
       error: params.error !== undefined ? params.error : run.error,
+      attestationExpiresAt:
+        params.attestationExpiresAt !== undefined
+          ? params.attestationExpiresAt
+          : run.attestationExpiresAt,
       updatedAt: new Date(),
     };
 
     this.runsById.set(run.id, updated);
     return updated;
+  }
+
+  async findExpiredWaitingRuns(now: Date): Promise<CausalRunRecord[]> {
+    return [...this.runsById.values()].filter(
+      (run) =>
+        run.status === 'WAITING_ATTESTATION' &&
+        run.attestationExpiresAt !== null &&
+        run.attestationExpiresAt.getTime() <= now.getTime(),
+    );
   }
 
   async acquireLease(params: AcquireLeaseParams): Promise<boolean> {

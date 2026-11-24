@@ -155,4 +155,31 @@ describe('PrismaStorageAdapter (SQLite)', () => {
     });
     expect(stillHeld).toBe(false);
   });
+
+  it('findExpiredWaitingRuns returns only WAITING_ATTESTATION runs past their deadline', async () => {
+    const adapter = await freshAdapter();
+    const past = new Date(Date.now() - 1_000);
+    const future = new Date(Date.now() + 60_000);
+
+    const { run: overdueRun } = await adapter.createOrGetRun({ workflowName: 'wf', input: {} });
+    await adapter.updateRunStatus({
+      runId: overdueRun.id,
+      status: 'WAITING_ATTESTATION',
+      attestationExpiresAt: past,
+    });
+
+    const { run: notYetDueRun } = await adapter.createOrGetRun({ workflowName: 'wf', input: {} });
+    await adapter.updateRunStatus({
+      runId: notYetDueRun.id,
+      status: 'WAITING_ATTESTATION',
+      attestationExpiresAt: future,
+    });
+
+    const { run: noDeadlineRun } = await adapter.createOrGetRun({ workflowName: 'wf', input: {} });
+    await adapter.updateRunStatus({ runId: noDeadlineRun.id, status: 'WAITING_ATTESTATION' });
+
+    const expired = await adapter.findExpiredWaitingRuns(new Date());
+
+    expect(expired.map((run) => run.id)).toEqual([overdueRun.id]);
+  });
 });

@@ -23,6 +23,7 @@ interface CausalRunRow {
   error: string | null;
   createdAt: Date;
   updatedAt: Date;
+  attestationExpiresAt: Date | null;
 }
 
 interface CausalEventRow {
@@ -65,6 +66,7 @@ export interface PrismaCausalClient {
       where: Record<string, unknown>;
       data: Record<string, unknown>;
     }): Promise<{ count: number }>;
+    findMany(args: { where: Record<string, unknown> }): Promise<CausalRunRow[]>;
   };
   causalEvent: {
     findMany(args: {
@@ -111,6 +113,7 @@ function mapRun(row: CausalRunRow): CausalRunRecord {
     error: row.error,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    attestationExpiresAt: row.attestationExpiresAt,
   };
 }
 
@@ -256,9 +259,19 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
         status: params.status,
         ...(params.output !== undefined ? { output: params.output } : {}),
         ...(params.error !== undefined ? { error: params.error } : {}),
+        ...(params.attestationExpiresAt !== undefined
+          ? { attestationExpiresAt: params.attestationExpiresAt }
+          : {}),
       },
     });
     return mapRun(updated);
+  }
+
+  async findExpiredWaitingRuns(now: Date): Promise<CausalRunRecord[]> {
+    const rows = await this.prisma.causalRun.findMany({
+      where: { status: 'WAITING_ATTESTATION', attestationExpiresAt: { lte: now } },
+    });
+    return rows.map(mapRun);
   }
 
   async acquireLease(params: AcquireLeaseParams): Promise<boolean> {

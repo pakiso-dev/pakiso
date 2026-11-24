@@ -138,6 +138,54 @@ export class InProcessCausalEngine implements CausalEngine {
     }
   }
 
+  /**
+   * Finds every run currently `WAITING_ATTESTATION` whose gate deadline has
+   * passed (requires an adapter implementing `findExpiredWaitingRuns`) and
+   * fails each one with a clear error, so overdue approvals don't wait
+   * forever. Acquires each run's lease first so concurrently running workers
+   * don't double-expire the same run; runs whose lease is currently held by
+   * another worker are skipped (they're presumably already being handled).
+   */
+  async expireOverdueAttestations(now: Date = new Date()): Promise<CausalRunRecord[]> {
+    if (!this.storage.findExpiredWaitingRuns) {
+      return [];
+    }
+
+    const expired = await this.storage.findExpiredWaitingRuns(now);
+    const results: CausalRunRecord[] = [];
+
+    for (const run of expired) {
+      const leaseAcquired = await this.acquireLease(run.id);
+      if (!leaseAcquired) {
+        continue;
+      }
+
+      try {
+        const events = await this.storage.getEvents(run.id);
+        const gateName = events.at(-1)?.stepName ?? '(unknown gate)';
+        const message = `Attestation gate "${gateName}" expired at ${run.attestationExpiresAt?.toISOString() ?? now.toISOString()}`;
+
+        await this.storage.appendEvent({
+          runId: run.id,
+          expectedSeq: events.length,
+          type: 'WORKFLOW_FAILED',
+          payload: { error: message },
+        });
+        const updated = await this.storage.updateRunStatus({
+          runId: run.id,
+          status: 'FAILED',
+          error: message,
+          attestationExpiresAt: null,
+        });
+        results.push(updated);
+      } finally {
+        await this.releaseLease(run.id);
+      }
+    }
+
+    return results;
+  }
+
   private async resume<TPayload extends Record<string, unknown>>(
     run: CausalRunRecord,
     signal: SignalWorkflowParams<TPayload>,
@@ -162,7 +210,11 @@ export class InProcessCausalEngine implements CausalEngine {
     }
 
     const handler = this.requireHandler(run.workflowName);
-    await this.storage.updateRunStatus({ runId: run.id, status: 'RUNNING' });
+    await this.storage.updateRunStatus({
+      runId: run.id,
+      status: 'RUNNING',
+      attestationExpiresAt: null,
+    });
 
     await this.executeRun(run, handler, {
       allowNewEvents: true,
@@ -230,10 +282,19 @@ export class InProcessCausalEngine implements CausalEngine {
         type: 'WORKFLOW_COMPLETED',
         payload: { output },
       });
-      return await this.storage.updateRunStatus({ runId: run.id, status: 'COMPLETED', output });
+      return await this.storage.updateRunStatus({
+        runId: run.id,
+        status: 'COMPLETED',
+        output,
+        attestationExpiresAt: null,
+      });
     } catch (error) {
       if (error instanceof WorkflowSuspendedError) {
-        return await this.storage.updateRunStatus({ runId: run.id, status: 'WAITING_ATTESTATION' });
+        return await this.storage.updateRunStatus({
+          runId: run.id,
+          status: 'WAITING_ATTESTATION',
+          attestationExpiresAt: error.expiresAt,
+        });
       }
 
       const message = error instanceof Error ? error.message : String(error);
@@ -247,6 +308,7 @@ export class InProcessCausalEngine implements CausalEngine {
         runId: run.id,
         status: 'FAILED',
         error: message,
+        attestationExpiresAt: null,
       });
     }
   }

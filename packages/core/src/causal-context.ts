@@ -164,7 +164,12 @@ export function createCausalContext(options: CreateCausalContextOptions): Create
         return event.payload as TPayload;
       }
 
-      throw new WorkflowSuspendedError(runId, gateName);
+      const recordedExpiresAt = requested.payload.expiresAt;
+      throw new WorkflowSuspendedError(
+        runId,
+        gateName,
+        typeof recordedExpiresAt === 'string' ? new Date(recordedExpiresAt) : null,
+      );
     }
 
     if (!allowNewEvents) {
@@ -175,7 +180,7 @@ export function createCausalContext(options: CreateCausalContextOptions): Create
       expiresAt: attestationOptions?.expiresAt?.toISOString() ?? null,
       metadata: attestationOptions?.metadata ?? {},
     });
-    throw new WorkflowSuspendedError(runId, gateName);
+    throw new WorkflowSuspendedError(runId, gateName, attestationOptions?.expiresAt ?? null);
   }
 
   const context: CausalContext = {

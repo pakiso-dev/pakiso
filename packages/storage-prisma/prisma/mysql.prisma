@@ -29,11 +29,15 @@ model CausalRun {
   /// processing this run, and when that claim expires. Null when unleased.
   lockedBy       String?
   leaseExpiresAt DateTime?
+  /// Deadline for the attestation gate currently being awaited (Phase 4:
+  /// auto-escalation). Null unless status is WAITING_ATTESTATION with a deadline.
+  attestationExpiresAt DateTime?
 
   events CausalEvent[]
 
   @@unique([workflowName, idempotencyKey])
   @@index([workflowName, correlationKey])
+  @@index([status, attestationExpiresAt])
   @@map("causal_runs")
 }
 

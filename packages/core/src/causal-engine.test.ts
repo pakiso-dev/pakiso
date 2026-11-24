@@ -453,3 +453,102 @@ describe('InProcessCausalEngine lease locking', () => {
     ).rejects.toThrow('Could not acquire execution lease');
   });
 });
+
+describe('InProcessCausalEngine attestation deadlines', () => {
+  it('records attestationExpiresAt on the run when a gate has a deadline', async () => {
+    const { engine } = createEngine();
+    const expiresAt = new Date(Date.now() + 60_000);
+    engine.registerWorkflow('wf', async (_input, ctx) => {
+      await ctx.awaitAttestation('gate', { expiresAt });
+      return {};
+    });
+
+    const run = await engine.startWorkflow({ workflowName: 'wf', input: {} });
+
+    expect(run.status).toBe('WAITING_ATTESTATION');
+    expect(run.attestationExpiresAt).toEqual(expiresAt);
+  });
+
+  it('clears attestationExpiresAt once the gate is signaled', async () => {
+    const { storage, engine } = createEngine();
+    engine.registerWorkflow('wf', async (_input, ctx) => {
+      await ctx.awaitAttestation('gate', { expiresAt: new Date(Date.now() + 60_000) });
+      return {};
+    });
+
+    const started = await engine.startWorkflow({ workflowName: 'wf', input: {} });
+    await engine.signalByRunId(started.id, { gateName: 'gate', payload: {} });
+
+    const finished = await storage.getRun(started.id);
+    expect(finished?.status).toBe('COMPLETED');
+    expect(finished?.attestationExpiresAt).toBeNull();
+  });
+
+  it('expireOverdueAttestations fails runs whose gate deadline has passed', async () => {
+    const { storage, engine } = createEngine();
+    engine.registerWorkflow('wf', async (_input, ctx) => {
+      await ctx.awaitAttestation('manager-approval', { expiresAt: new Date(Date.now() - 1_000) });
+      return {};
+    });
+
+    const run = await engine.startWorkflow({ workflowName: 'wf', input: {} });
+    expect(run.status).toBe('WAITING_ATTESTATION');
+
+    const expired = await engine.expireOverdueAttestations();
+
+    expect(expired).toHaveLength(1);
+    expect(expired[0]?.id).toBe(run.id);
+    expect(expired[0]?.status).toBe('FAILED');
+    expect(expired[0]?.error).toContain('manager-approval');
+    expect(expired[0]?.attestationExpiresAt).toBeNull();
+
+    const stored = await storage.getRun(run.id);
+    expect(stored?.status).toBe('FAILED');
+
+    const events = await storage.getEvents(run.id);
+    expect(events.map((e) => e.type)).toEqual([
+      'WORKFLOW_STARTED',
+      'ATTESTATION_REQUESTED',
+      'WORKFLOW_FAILED',
+    ]);
+  });
+
+  it('expireOverdueAttestations does not touch runs whose deadline has not yet passed', async () => {
+    const { engine } = createEngine();
+    engine.registerWorkflow('wf', async (_input, ctx) => {
+      await ctx.awaitAttestation('gate', { expiresAt: new Date(Date.now() + 60_000) });
+      return {};
+    });
+
+    await engine.startWorkflow({ workflowName: 'wf', input: {} });
+
+    expect(await engine.expireOverdueAttestations()).toEqual([]);
+  });
+
+  it('skips expiring a run whose lease is already held by another worker', async () => {
+    const { storage, engine } = createEngine();
+    engine.registerWorkflow('wf', async (_input, ctx) => {
+      await ctx.awaitAttestation('gate', { expiresAt: new Date(Date.now() - 1_000) });
+      return {};
+    });
+
+    const run = await engine.startWorkflow({ workflowName: 'wf', input: {} });
+    await storage.acquireLease({
+      runId: run.id,
+      leaseOwner: 'another-worker',
+      leaseDurationMs: 10_000,
+    });
+
+    expect(await engine.expireOverdueAttestations()).toEqual([]);
+    expect((await storage.getRun(run.id))?.status).toBe('WAITING_ATTESTATION');
+  });
+
+  it('returns an empty array when the storage adapter does not support findExpiredWaitingRuns', async () => {
+    const storage = new InMemoryStorageAdapter();
+    // biome-ignore lint/performance/noDelete: simulating an adapter that genuinely lacks this optional method
+    delete (storage as { findExpiredWaitingRuns?: unknown }).findExpiredWaitingRuns;
+    const engine = new InProcessCausalEngine({ storage });
+
+    expect(await engine.expireOverdueAttestations()).toEqual([]);
+  });
+});

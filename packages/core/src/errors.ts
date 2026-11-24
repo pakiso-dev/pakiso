@@ -35,6 +35,8 @@ export class WorkflowSuspendedError extends Error {
   constructor(
     public readonly runId: string,
     public readonly gateName: string,
+    /** The attestation gate's deadline, if one was set via `AttestationOptions.expiresAt` */
+    public readonly expiresAt: Date | null = null,
   ) {
     super(`Run "${runId}" suspended awaiting attestation "${gateName}"`);
     this.name = 'WorkflowSuspendedError';
