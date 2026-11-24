@@ -43,6 +43,7 @@ const sidebar = [
       { text: 'Decorators', link: '/nestjs/decorators' },
       { text: 'Discovery service', link: '/nestjs/discovery-service' },
       { text: 'REST control plane', link: '/nestjs/rest-control-plane' },
+      { text: 'Dashboard', link: '/nestjs/dashboard' },
     ],
   },
   {

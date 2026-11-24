@@ -8,9 +8,13 @@ import {
   type CausalStorageAdapter,
   ConcurrencyConflictError,
   type CreateRunParams,
+  type ListRunsParams,
+  type ListRunsResult,
   type ReleaseLeaseParams,
   type UpdateRunStatusParams,
 } from '@causal/core';
+
+const DEFAULT_LIST_RUNS_LIMIT = 20;
 
 interface CausalRunRow {
   id: string;
@@ -66,7 +70,13 @@ export interface PrismaCausalClient {
       where: Record<string, unknown>;
       data: Record<string, unknown>;
     }): Promise<{ count: number }>;
-    findMany(args: { where: Record<string, unknown> }): Promise<CausalRunRow[]>;
+    findMany(args: {
+      where: Record<string, unknown>;
+      orderBy?: Record<string, unknown> | Record<string, unknown>[];
+      take?: number;
+      skip?: number;
+      cursor?: { id: string };
+    }): Promise<CausalRunRow[]>;
     deleteMany(args: { where: Record<string, unknown> }): Promise<{ count: number }>;
   };
   causalEvent: {
@@ -274,6 +284,32 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
       where: { status: 'WAITING_ATTESTATION', attestationExpiresAt: { lte: now } },
     });
     return rows.map(mapRun);
+  }
+
+  async listRuns(params: ListRunsParams): Promise<ListRunsResult> {
+    const limit = params.limit ?? DEFAULT_LIST_RUNS_LIMIT;
+    // Fetch one extra row to detect whether a further page exists, without a
+    // separate count query.
+    const rows = await this.prisma.causalRun.findMany({
+      where: {
+        ...(params.workflowName !== undefined ? { workflowName: params.workflowName } : {}),
+        ...(params.status !== undefined ? { status: params.status } : {}),
+      },
+      // `id` is included as a tiebreaker so pagination stays stable even when
+      // multiple runs share the same `createdAt` millisecond.
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(params.cursor !== undefined ? { cursor: { id: params.cursor }, skip: 1 } : {}),
+    });
+
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const lastRow = page.at(-1);
+
+    return {
+      runs: page.map(mapRun),
+      nextCursor: hasMore && lastRow !== undefined ? lastRow.id : null,
+    };
   }
 
   async purgeCompletedRunsOlderThan(olderThan: Date): Promise<number> {

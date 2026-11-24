@@ -49,6 +49,7 @@ interface CausalStorageAdapter {
   releaseLease?(params: ReleaseLeaseParams): Promise<void>;
   findExpiredWaitingRuns?(now: Date): Promise<CausalRunRecord[]>;
   purgeCompletedRunsOlderThan?(olderThan: Date): Promise<number>;
+  listRuns?(params: ListRunsParams): Promise<ListRunsResult>;
 }
 ```
 
@@ -176,6 +177,11 @@ track exactly which run applies.
   `engine.expireOverdueAttestations()` to auto-fail overdue gates.
 - **`purgeCompletedRunsOlderThan`** — deletes terminal runs (and their
   events) older than a cutoff, for retention/TTL enforcement.
+- **`listRuns`** — browses/paginates runs filtered by `workflowName`/
+  `status`, most-recently-created first, without needing to already know a
+  run's id or correlation key. Needed for the [dashboard](/nestjs/dashboard)'s
+  run-browsing list; adapters that omit it simply don't support browsing
+  (single-run lookups by id still work regardless).
 
 #### The bundled in-memory adapter
 

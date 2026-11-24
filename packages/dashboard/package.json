@@ -1,0 +1,64 @@
+{
+  "name": "@causal/dashboard",
+  "version": "0.1.0",
+  "description": "Embeddable NestJS dashboard for Causal — browse runs and view their full event journals from your live app.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build:ui": "vite build && vite build --config vite.ssr.config.ts",
+    "build": "tsup && pnpm build:ui",
+    "dev": "tsup --watch",
+    "pretest": "pnpm build:ui",
+    "test": "vitest run --coverage",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p frontend/tsconfig.json"
+  },
+  "dependencies": {
+    "@causal/core": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "peerDependencies": {
+    "@causal/nest": "workspace:*",
+    "@nestjs/common": "^10.0.0 || ^11.0.0",
+    "@nestjs/core": "^10.0.0 || ^11.0.0",
+    "reflect-metadata": "^0.1.13 || ^0.2.0",
+    "rxjs": "^7.0.0"
+  },
+  "devDependencies": {
+    "@causal/nest": "workspace:*",
+    "@nestjs/common": "^10.4.15",
+    "@nestjs/core": "^10.4.15",
+    "@nestjs/platform-express": "^10.4.15",
+    "@nestjs/testing": "^10.4.15",
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/supertest": "^6.0.2",
+    "@vitejs/plugin-react": "^4.3.3",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "supertest": "^7.0.0",
+    "tailwindcss": "^4.0.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -7,9 +7,13 @@ import type {
   CausalRunRecord,
   CausalStorageAdapter,
   CreateRunParams,
+  ListRunsParams,
+  ListRunsResult,
   ReleaseLeaseParams,
   UpdateRunStatusParams,
 } from './storage.js';
+
+const DEFAULT_LIST_RUNS_LIMIT = 20;
 
 /**
  * Zero-dependency CausalStorageAdapter backed by in-process Maps. Intended for
@@ -208,6 +212,26 @@ export class InMemoryStorageAdapter implements CausalStorageAdapter {
     }
 
     return purged;
+  }
+
+  async listRuns(params: ListRunsParams): Promise<ListRunsResult> {
+    const limit = params.limit ?? DEFAULT_LIST_RUNS_LIMIT;
+    const sorted = [...this.runsById.values()]
+      .filter(
+        (run) => params.workflowName === undefined || run.workflowName === params.workflowName,
+      )
+      .filter((run) => params.status === undefined || run.status === params.status)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || b.id.localeCompare(a.id));
+
+    const startIndex =
+      params.cursor !== undefined ? sorted.findIndex((run) => run.id === params.cursor) + 1 : 0;
+    const page = sorted.slice(startIndex, startIndex + limit);
+    const hasMore = startIndex + limit < sorted.length;
+
+    return {
+      runs: page,
+      nextCursor: hasMore ? (page.at(-1)?.id ?? null) : null,
+    };
   }
 
   private idempotencyIndexKey(workflowName: string, idempotencyKey: string): string {

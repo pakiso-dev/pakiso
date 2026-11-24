@@ -96,6 +96,22 @@ export interface ReleaseLeaseParams {
   leaseOwner: string;
 }
 
+export interface ListRunsParams {
+  workflowName?: string;
+  status?: CausalRunStatus;
+  /** Opaque cursor from a previous `ListRunsResult.nextCursor`; omit to fetch the first page. */
+  cursor?: string;
+  /** Max runs to return; adapters should apply a sane default (e.g. 20) when omitted. */
+  limit?: number;
+}
+
+export interface ListRunsResult {
+  /** Ordered most-recently-created first. */
+  runs: CausalRunRecord[];
+  /** Pass as `cursor` to fetch the next page; null when there are no more runs. */
+  nextCursor: string | null;
+}
+
 export interface CausalStorageAdapter {
   connect?(): Promise<void>;
   disconnect?(): Promise<void>;
@@ -146,4 +162,14 @@ export interface CausalStorageAdapter {
    * purging.
    */
   purgeCompletedRunsOlderThan?(olderThan: Date): Promise<number>;
+
+  /**
+   * Browses/paginates runs, optionally filtered by `workflowName`/`status`,
+   * ordered most-recently-created first — unlike `getRun`/
+   * `getLatestRunByCorrelationKey`, this doesn't require already knowing a
+   * run's id or correlation key. Primarily intended for operational tooling
+   * (e.g. a dashboard listing runs currently awaiting attestation). Optional;
+   * adapters that omit it simply don't support run browsing.
+   */
+  listRuns?(params: ListRunsParams): Promise<ListRunsResult>;
 }

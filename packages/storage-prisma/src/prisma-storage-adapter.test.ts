@@ -38,6 +38,22 @@ async function freshAdapter(): Promise<PrismaStorageAdapter> {
   return new PrismaStorageAdapter(prisma);
 }
 
+/**
+ * Computes the expected `listRuns` ordering (most-recently-created first,
+ * `id` desc as a tiebreaker) from the runs' actual persisted `createdAt`,
+ * since that column is DB-managed and not practical to backdate in tests.
+ */
+async function expectedListOrder(
+  adapter: PrismaStorageAdapter,
+  runIds: string[],
+): Promise<string[]> {
+  const runs = await Promise.all(runIds.map((id) => adapter.getRun(id)));
+  return runs
+    .filter((run): run is NonNullable<typeof run> => run !== null)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || b.id.localeCompare(a.id))
+    .map((run) => run.id);
+}
+
 runStorageConformanceTests({ createAdapter: freshAdapter });
 
 describe('PrismaStorageAdapter (SQLite)', () => {
@@ -222,5 +238,66 @@ describe('PrismaStorageAdapter (SQLite)', () => {
     expect(await adapter.getLatestRunByCorrelationKey('wf', 'order:ORD-1')).toBeNull();
     // Non-terminal runs are never purged regardless of cutoff.
     expect(await adapter.getRun(stillRunning.id)).not.toBeNull();
+  });
+
+  it('listRuns filters by workflowName/status, ordered most-recently-created first', async () => {
+    const adapter = await freshAdapter();
+
+    const { run: otherWorkflowRun } = await adapter.createOrGetRun({
+      workflowName: 'other-wf',
+      input: {},
+    });
+    const { run: completedRun } = await adapter.createOrGetRun({ workflowName: 'wf', input: {} });
+    await adapter.updateRunStatus({ runId: completedRun.id, status: 'COMPLETED' });
+    const { run: waitingRunA } = await adapter.createOrGetRun({ workflowName: 'wf', input: {} });
+    await adapter.updateRunStatus({ runId: waitingRunA.id, status: 'WAITING_ATTESTATION' });
+    const { run: waitingRunB } = await adapter.createOrGetRun({ workflowName: 'wf', input: {} });
+    await adapter.updateRunStatus({ runId: waitingRunB.id, status: 'WAITING_ATTESTATION' });
+
+    const expectedWfOrder = await expectedListOrder(adapter, [
+      completedRun.id,
+      waitingRunA.id,
+      waitingRunB.id,
+    ]);
+
+    const allForWorkflow = await adapter.listRuns({ workflowName: 'wf' });
+    expect(allForWorkflow.runs.map((run) => run.id)).toEqual(expectedWfOrder);
+    expect(allForWorkflow.nextCursor).toBeNull();
+    expect(allForWorkflow.runs.map((run) => run.id)).not.toContain(otherWorkflowRun.id);
+
+    const waitingOnly = await adapter.listRuns({
+      workflowName: 'wf',
+      status: 'WAITING_ATTESTATION',
+    });
+    expect(waitingOnly.runs.map((run) => run.id)).toEqual(
+      expectedWfOrder.filter((id) => id !== completedRun.id),
+    );
+  });
+
+  it('listRuns paginates via cursor, respecting limit, without duplicates or gaps', async () => {
+    const adapter = await freshAdapter();
+
+    const createdIds: string[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      const { run } = await adapter.createOrGetRun({ workflowName: 'wf', input: {} });
+      createdIds.push(run.id);
+    }
+    const expectedOrder = await expectedListOrder(adapter, createdIds);
+
+    const collected: string[] = [];
+    let cursor: string | undefined;
+    for (let page = 0; page < 10; page += 1) {
+      const result = await adapter.listRuns({
+        limit: 2,
+        ...(cursor !== undefined ? { cursor } : {}),
+      });
+      collected.push(...result.runs.map((run) => run.id));
+      if (result.nextCursor === null) {
+        break;
+      }
+      cursor = result.nextCursor;
+    }
+
+    expect(collected).toEqual(expectedOrder);
   });
 });

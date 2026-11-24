@@ -14,6 +14,7 @@ full architecture, contracts, and phased roadmap.
 | [`@causal/nest`](./packages/nest)                 | NestJS module, decorators, discovery, REST control-plane helpers |
 | [`@causal/storage-prisma`](./packages/storage-prisma) | Multi-dialect Prisma storage adapter (Postgres/MySQL/SQLite)      |
 | [`@causal/cli`](./packages/cli)                   | Developer CLI (`causal init` / `causal inspect` / `causal replay`) |
+| [`@causal/dashboard`](./packages/dashboard)       | Embeddable NestJS dashboard: browse runs and view their full event journals from your live app |
 | [`@causal/example-api`](./packages/example-api)   | Example NestJS app: a durable user-onboarding workflow with email/compliance attestation gates |
 | [`@causal/docs`](./packages/docs)                 | Public developer documentation site (VitePress) |
 

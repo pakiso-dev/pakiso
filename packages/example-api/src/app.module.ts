@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { CausalDashboardModule } from '@causal/dashboard';
 import { CausalModule } from '@causal/nest';
 import { Module } from '@nestjs/common';
 import { OnboardingModule } from './onboarding/onboarding.module.js';
@@ -18,6 +19,9 @@ import { resolveExampleStorage } from './storage.js';
       }),
     }),
     OnboardingModule,
+    // Browse runs and their full event journals at /causal-dashboard — see
+    // @causal/dashboard's README for the production auth/scope caveats.
+    CausalDashboardModule,
   ],
 })
 export class AppModule {}

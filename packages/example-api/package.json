@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@causal/core": "workspace:*",
+    "@causal/dashboard": "workspace:*",
     "@causal/nest": "workspace:*",
     "@causal/storage-prisma": "workspace:*",
     "@nestjs/common": "^10.4.15",

@@ -95,6 +95,14 @@ async getRun(@Param('runId') runId: string) {
 }
 ```
 
+::: tip Looking for a ready-made browsing UI?
+If you want to browse *every* run (not just one you already have the id or
+correlation key for) — e.g. "show me every run waiting on approval" — see
+the [dashboard](/nestjs/dashboard) package instead of hand-rolling a listing
+endpoint: `@causal/dashboard` mounts a read-only UI + JSON API for exactly
+this, reusing the same `CAUSAL_STORAGE_ADAPTER` provider.
+:::
+
 #### Redacting sensitive fields automatically
 
 Apply `RedactResponseInterceptor` at the controller level so every response

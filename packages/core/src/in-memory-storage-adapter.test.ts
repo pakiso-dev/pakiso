@@ -125,3 +125,59 @@ describe('InMemoryStorageAdapter.purgeCompletedRunsOlderThan', () => {
     expect(await storage.getRun(run.id)).not.toBeNull();
   });
 });
+
+describe('InMemoryStorageAdapter.listRuns', () => {
+  it('orders runs most-recently-created first, filtered by workflowName and status', async () => {
+    const storage = new InMemoryStorageAdapter();
+
+    const { run: oldestOtherWorkflow } = await storage.createOrGetRun({
+      workflowName: 'other-wf',
+      input: {},
+    });
+    Object.assign(oldestOtherWorkflow, { createdAt: new Date('2024-01-01T00:00:00.000Z') });
+
+    const { run: oldest } = await storage.createOrGetRun({ workflowName: 'wf', input: {} });
+    Object.assign(oldest, { createdAt: new Date('2024-01-02T00:00:00.000Z') });
+    await storage.updateRunStatus({ runId: oldest.id, status: 'COMPLETED' });
+
+    const { run: middle } = await storage.createOrGetRun({ workflowName: 'wf', input: {} });
+    Object.assign(middle, { createdAt: new Date('2024-01-03T00:00:00.000Z') });
+    await storage.updateRunStatus({ runId: middle.id, status: 'WAITING_ATTESTATION' });
+
+    const { run: newest } = await storage.createOrGetRun({ workflowName: 'wf', input: {} });
+    Object.assign(newest, { createdAt: new Date('2024-01-04T00:00:00.000Z') });
+    await storage.updateRunStatus({ runId: newest.id, status: 'WAITING_ATTESTATION' });
+
+    const allForWorkflow = await storage.listRuns({ workflowName: 'wf' });
+    expect(allForWorkflow.runs.map((run) => run.id)).toEqual([newest.id, middle.id, oldest.id]);
+    expect(allForWorkflow.nextCursor).toBeNull();
+
+    const waitingOnly = await storage.listRuns({
+      workflowName: 'wf',
+      status: 'WAITING_ATTESTATION',
+    });
+    expect(waitingOnly.runs.map((run) => run.id)).toEqual([newest.id, middle.id]);
+  });
+
+  it('paginates via cursor, respecting limit', async () => {
+    const storage = new InMemoryStorageAdapter();
+
+    const { run: oldest } = await storage.createOrGetRun({ workflowName: 'wf', input: {} });
+    Object.assign(oldest, { createdAt: new Date(2024, 0, 1) });
+    const { run: middle } = await storage.createOrGetRun({ workflowName: 'wf', input: {} });
+    Object.assign(middle, { createdAt: new Date(2024, 0, 2) });
+    const { run: newest } = await storage.createOrGetRun({ workflowName: 'wf', input: {} });
+    Object.assign(newest, { createdAt: new Date(2024, 0, 3) });
+
+    const firstPage = await storage.listRuns({ limit: 2 });
+    expect(firstPage.runs.map((run) => run.id)).toEqual([newest.id, middle.id]);
+    expect(firstPage.nextCursor).toBe(middle.id);
+
+    const secondPage = await storage.listRuns({
+      limit: 2,
+      ...(firstPage.nextCursor !== null ? { cursor: firstPage.nextCursor } : {}),
+    });
+    expect(secondPage.runs.map((run) => run.id)).toEqual([oldest.id]);
+    expect(secondPage.nextCursor).toBeNull();
+  });
+});

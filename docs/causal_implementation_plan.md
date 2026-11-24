@@ -370,4 +370,16 @@ export interface CausalModuleAsyncOptions {
 * [ ] **Distributed Worker Locking / Lease Management:** Prevent two horizontal pods from replaying the same run concurrently when signals arrive simultaneously.
 * [ ] **Attestation Deadlines & Timers:** Add durable timeout scheduling so gates waiting days for approval can auto-escalate or expire cleanly.
 * [ ] **Retention & Crypto-Shredding:** Add TTL archival/purging for completed runs and per-run encryption keys for GDPR/privacy erasure compliance.
+
+---
+
+## Phase 5: `@causal/dashboard` — Operational Visibility
+**Goal:** Let a live app's own team browse runs and inspect their full event
+journals from a browser, without DB/VPN access or a hand-rolled REST
+controller per app.
+
+* [ ] **`listRuns` storage capability:** Add an optional `listRuns(params)` method to `CausalStorageAdapter` (filter by `workflowName`/`status`, cursor-paginated, most-recently-created first), implemented in `InMemoryStorageAdapter` and `PrismaStorageAdapter`.
+* [ ] **`CausalDashboardModule`:** An embeddable NestJS module reusing the host app's own `CAUSAL_STORAGE_ADAPTER` provider, exposing a read-only JSON API (`GET /causal-dashboard/api/runs`, `GET /causal-dashboard/api/runs/:id`) and a bundled static SPA, served without any Express/Fastify-specific static-file dependency.
+* [ ] **View-only for now:** Signaling gates / cancelling / retrying runs from the dashboard is intentionally out of scope for this phase — see the REST control plane docs for building that yourself in the meantime.
+
 * [ ] **OpenTelemetry Tracing:** Emit spans per workflow run, replay pass, and step execution correlated by `runId` and `correlationKey`; during replay, backdate step spans using the journal's recorded `durationMs` instead of live timing, since replayed steps re-execute near-instantly.
