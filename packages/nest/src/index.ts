@@ -4,3 +4,6 @@ export * from './decorators.js';
 export * from './storage-resolution.js';
 export * from './workflow-explorer.js';
 export * from './causal.module.js';
+export * from './redaction.js';
+export * from './redact-response.interceptor.js';
+export * from './idempotency.js';
