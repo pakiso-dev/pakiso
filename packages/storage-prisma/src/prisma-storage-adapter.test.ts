@@ -182,4 +182,45 @@ describe('PrismaStorageAdapter (SQLite)', () => {
 
     expect(expired.map((run) => run.id)).toEqual([overdueRun.id]);
   });
+
+  it('purges completed/failed/cancelled runs older than the cutoff, and their events', async () => {
+    const adapter = await freshAdapter();
+
+    const { run: completedRun } = await adapter.createOrGetRun({
+      workflowName: 'wf',
+      input: {},
+      correlationKey: 'order:ORD-1',
+      idempotencyKey: 'idem-completed',
+    });
+    await adapter.appendEvent({
+      runId: completedRun.id,
+      expectedSeq: 0,
+      type: 'WORKFLOW_STARTED',
+      payload: {},
+    });
+    await adapter.updateRunStatus({ runId: completedRun.id, status: 'COMPLETED' });
+
+    const { run: failedRun } = await adapter.createOrGetRun({ workflowName: 'wf', input: {} });
+    await adapter.updateRunStatus({ runId: failedRun.id, status: 'FAILED', error: 'boom' });
+
+    const { run: stillRunning } = await adapter.createOrGetRun({ workflowName: 'wf', input: {} });
+
+    // `@updatedAt` is DB-managed, so instead of backdating rows, vary the cutoff
+    // relative to "now": a future cutoff includes runs completed just now; a past
+    // cutoff excludes them.
+    const tooRecentCutoff = new Date(Date.now() - 60_000);
+    expect(await adapter.purgeCompletedRunsOlderThan(tooRecentCutoff)).toBe(0);
+    expect(await adapter.getRun(completedRun.id)).not.toBeNull();
+
+    const inclusiveCutoff = new Date(Date.now() + 60_000);
+    const purgedCount = await adapter.purgeCompletedRunsOlderThan(inclusiveCutoff);
+
+    expect(purgedCount).toBe(2);
+    expect(await adapter.getRun(completedRun.id)).toBeNull();
+    expect(await adapter.getRun(failedRun.id)).toBeNull();
+    expect(await adapter.getEvents(completedRun.id)).toEqual([]);
+    expect(await adapter.getLatestRunByCorrelationKey('wf', 'order:ORD-1')).toBeNull();
+    // Non-terminal runs are never purged regardless of cutoff.
+    expect(await adapter.getRun(stillRunning.id)).not.toBeNull();
+  });
 });

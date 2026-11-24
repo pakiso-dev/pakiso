@@ -137,4 +137,13 @@ export interface CausalStorageAdapter {
    * simply don't support deadline enforcement.
    */
   findExpiredWaitingRuns?(now: Date): Promise<CausalRunRecord[]>;
+
+  /**
+   * Permanently deletes every run (and its events) in a terminal state
+   * (`COMPLETED`, `FAILED`, or `CANCELLED`) last updated at or before
+   * `olderThan`, for retention/TTL enforcement. Returns the number of runs
+   * deleted. Optional; adapters that omit it simply don't support retention
+   * purging.
+   */
+  purgeCompletedRunsOlderThan?(olderThan: Date): Promise<number>;
 }

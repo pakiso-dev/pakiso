@@ -86,6 +86,24 @@ export class Aes256GcmPayloadCodec implements PayloadCodec {
     }
     return key;
   }
+
+  /**
+   * Crypto-shredding (GDPR/privacy erasure): permanently forgets a retired
+   * key by `kid`, in-memory and irreversibly. Any payload previously
+   * encrypted under that key becomes permanently undecryptable by this
+   * codec instance — without needing to locate and delete the ciphertext
+   * rows themselves, which may be retained for audit purposes. Refuses to
+   * forget the *active* key (rotate to a new active key first) since that
+   * would also break future `encode()` calls.
+   */
+  forgetKey(kid: string): void {
+    if (kid === this.activeKid) {
+      throw new Error(
+        `Cannot forget the active encryption key "${kid}" — rotate to a new active key first`,
+      );
+    }
+    this.keysByKid.delete(kid);
+  }
 }
 
 function isEncryptedEnvelope(

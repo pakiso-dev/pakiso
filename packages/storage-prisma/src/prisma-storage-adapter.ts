@@ -67,6 +67,7 @@ export interface PrismaCausalClient {
       data: Record<string, unknown>;
     }): Promise<{ count: number }>;
     findMany(args: { where: Record<string, unknown> }): Promise<CausalRunRow[]>;
+    deleteMany(args: { where: Record<string, unknown> }): Promise<{ count: number }>;
   };
   causalEvent: {
     findMany(args: {
@@ -78,6 +79,7 @@ export interface PrismaCausalClient {
       _max: { seq: true };
     }): Promise<{ _max: { seq: number | null } }>;
     create(args: { data: Record<string, unknown> }): Promise<CausalEventRow>;
+    deleteMany(args: { where: Record<string, unknown> }): Promise<{ count: number }>;
   };
 }
 
@@ -272,6 +274,26 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
       where: { status: 'WAITING_ATTESTATION', attestationExpiresAt: { lte: now } },
     });
     return rows.map(mapRun);
+  }
+
+  async purgeCompletedRunsOlderThan(olderThan: Date): Promise<number> {
+    const toPurge = await this.prisma.causalRun.findMany({
+      where: {
+        status: { in: ['COMPLETED', 'FAILED', 'CANCELLED'] },
+        updatedAt: { lte: olderThan },
+      },
+    });
+    if (toPurge.length === 0) {
+      return 0;
+    }
+
+    const runIds = toPurge.map((run) => run.id);
+    // Events must be deleted first: the FK from CausalEvent -> CausalRun
+    // defaults to RESTRICT, so deleting a run while its events still exist
+    // would fail.
+    await this.prisma.causalEvent.deleteMany({ where: { runId: { in: runIds } } });
+    await this.prisma.causalRun.deleteMany({ where: { id: { in: runIds } } });
+    return runIds.length;
   }
 
   async acquireLease(params: AcquireLeaseParams): Promise<boolean> {

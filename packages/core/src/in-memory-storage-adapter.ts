@@ -169,6 +169,47 @@ export class InMemoryStorageAdapter implements CausalStorageAdapter {
     }
   }
 
+  async purgeCompletedRunsOlderThan(olderThan: Date): Promise<number> {
+    const terminalStatuses = new Set<CausalRunRecord['status']>([
+      'COMPLETED',
+      'FAILED',
+      'CANCELLED',
+    ]);
+    let purged = 0;
+
+    for (const run of [...this.runsById.values()]) {
+      if (!terminalStatuses.has(run.status) || run.updatedAt.getTime() > olderThan.getTime()) {
+        continue;
+      }
+
+      this.runsById.delete(run.id);
+      this.eventsByRunId.delete(run.id);
+      this.leasesByRunId.delete(run.id);
+
+      if (run.idempotencyKey) {
+        this.runIdByIdempotencyKey.delete(
+          this.idempotencyIndexKey(run.workflowName, run.idempotencyKey),
+        );
+      }
+      if (run.correlationKey) {
+        const key = this.correlationIndexKey(run.workflowName, run.correlationKey);
+        const ids = this.runIdsByCorrelationKey.get(key);
+        if (ids) {
+          const remaining = ids.filter((id) => id !== run.id);
+          if (remaining.length > 0) {
+            this.runIdsByCorrelationKey.set(key, remaining);
+          } else {
+            this.runIdsByCorrelationKey.delete(key);
+          }
+        }
+      }
+
+      purged += 1;
+    }
+
+    return purged;
+  }
+
   private idempotencyIndexKey(workflowName: string, idempotencyKey: string): string {
     return `${workflowName}::${idempotencyKey}`;
   }

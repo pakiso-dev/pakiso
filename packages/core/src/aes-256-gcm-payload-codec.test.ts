@@ -67,4 +67,40 @@ describe('Aes256GcmPayloadCodec', () => {
       () => new Aes256GcmPayloadCodec({ activeKey: { kid: 'k1', key: 'dG9vc2hvcnQ=' } }),
     ).toThrow('Encryption key "k1" must decode to 32 bytes, got 8');
   });
+
+  describe('forgetKey (crypto-shredding)', () => {
+    it('permanently prevents decoding payloads encrypted under a forgotten retired key', async () => {
+      const retiredKey = { kid: 'k1', key: generateKey() };
+      const activeKey = { kid: 'k2', key: generateKey() };
+      const codec = new Aes256GcmPayloadCodec({ activeKey, previousKeys: [retiredKey] });
+
+      const retiredCodecView = new Aes256GcmPayloadCodec({ activeKey: retiredKey });
+      const encoded = await retiredCodecView.encode({ ssn: '123-45-6789' });
+
+      // Before forgetting, the rotated codec can still decode old payloads.
+      await expect(codec.decode(encoded)).resolves.toEqual({ ssn: '123-45-6789' });
+
+      codec.forgetKey('k1');
+
+      await expect(codec.decode(encoded)).rejects.toThrow(
+        'No encryption key registered for kid "k1"',
+      );
+    });
+
+    it('refuses to forget the currently active key', () => {
+      const codec = new Aes256GcmPayloadCodec({ activeKey: { kid: 'k1', key: generateKey() } });
+
+      expect(() => codec.forgetKey('k1')).toThrow(
+        'Cannot forget the active encryption key "k1" — rotate to a new active key first',
+      );
+    });
+
+    it('is a no-op when asked to forget an already-unknown kid', async () => {
+      const codec = new Aes256GcmPayloadCodec({ activeKey: { kid: 'k1', key: generateKey() } });
+
+      expect(() => codec.forgetKey('never-registered')).not.toThrow();
+      // encode() under the still-active key is unaffected.
+      await expect(codec.encode({ a: 1 })).resolves.toMatchObject({ __causalEnc: true });
+    });
+  });
 });
