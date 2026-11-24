@@ -1,0 +1,30 @@
+# Causal
+
+A stateful, deterministic, auditable execution framework for Node.js and NestJS with
+Bring-Your-Own-Storage (BYOS), human/policy attestation gates, and local trace replay.
+
+See [docs/causal_implementation_plan.md](./docs/causal_implementation_plan.md) for the
+full architecture, contracts, and phased roadmap.
+
+## Packages
+
+| Package                                          | Description                                                      |
+| ------------------------------------------------- | ------------------------------------------------------------------ |
+| [`@causal/core`](./packages/core)                 | Zero-dependency deterministic execution engine (BYOS, replay, encryption) |
+| [`@causal/nest`](./packages/nest)                 | NestJS module, decorators, discovery, REST control-plane helpers |
+| [`@causal/storage-prisma`](./packages/storage-prisma) | Multi-dialect Prisma storage adapter (Postgres/MySQL/SQLite)      |
+| [`@causal/cli`](./packages/cli)                   | Developer CLI (`causal init` / `causal inspect` / `causal replay`) |
+
+## Development
+
+```bash
+corepack enable
+pnpm install
+pnpm build
+pnpm test
+pnpm lint
+```
+
+This is a pnpm workspace orchestrated with Turborepo. Each package builds with
+`tsup` (dual ESM/CJS + type declarations) and is tested with Vitest. Linting and
+formatting are handled by Biome. Releases are managed with Changesets.

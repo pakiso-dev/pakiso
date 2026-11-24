@@ -1,0 +1,1 @@
+export const CAUSAL_STORAGE_PRISMA_VERSION = '0.1.0';
