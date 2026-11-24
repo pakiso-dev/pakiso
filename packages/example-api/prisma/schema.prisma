@@ -1,0 +1,62 @@
+// Causal storage schema for this example app — SQLite only.
+//
+// This is a standalone copy of @causal/storage-prisma's prisma/sqlite.prisma
+// (kept model-for-model identical so the generated client satisfies the same
+// PrismaCausalClient contract), rather than generating directly against that
+// package's own schema file. Doing so keeps this app's dev database and
+// generated client entirely local to `packages/example-api/`, instead of
+// writing into @causal/storage-prisma's package directory — exactly what a
+// real consumer of @causal/storage-prisma would do in their own project.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/sqlite"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("CAUSAL_DATABASE_URL")
+}
+
+model CausalRun {
+  id             String   @id @default(uuid(7))
+  workflowName   String
+  correlationKey String?
+  idempotencyKey String?
+  status         String
+  input          Json
+  output         Json?
+  error          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  /// Distributed execution lease (Phase 4): the worker/replica id currently
+  /// processing this run, and when that claim expires. Null when unleased.
+  lockedBy       String?
+  leaseExpiresAt DateTime?
+  /// Deadline for the attestation gate currently being awaited (Phase 4:
+  /// auto-escalation). Null unless status is WAITING_ATTESTATION with a deadline.
+  attestationExpiresAt DateTime?
+
+  events CausalEvent[]
+
+  @@unique([workflowName, idempotencyKey])
+  @@index([workflowName, correlationKey])
+  @@index([status, attestationExpiresAt])
+  @@map("causal_runs")
+}
+
+model CausalEvent {
+  id         String   @id @default(uuid())
+  runId      String
+  seq        Int
+  type       String
+  stepName   String?
+  durationMs Int?
+  payload    Json
+  createdAt  DateTime @default(now())
+
+  run CausalRun @relation(fields: [runId], references: [id])
+
+  @@unique([runId, seq])
+  @@map("causal_events")
+}

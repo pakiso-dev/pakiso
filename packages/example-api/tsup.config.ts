@@ -1,0 +1,22 @@
+import { defineConfig } from 'tsup';
+
+export default defineConfig({
+  entry: ['src/main.ts'],
+  format: ['esm'],
+  dts: false,
+  sourcemap: true,
+  clean: true,
+  target: 'node18',
+  external: [
+    '@causal/storage-prisma',
+    '@nestjs/common',
+    '@nestjs/core',
+    '@nestjs/platform-express',
+    '@nestjs/swagger',
+    '@prisma/client',
+    'class-transformer',
+    'class-validator',
+    'reflect-metadata',
+    'rxjs',
+  ],
+});

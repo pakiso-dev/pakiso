@@ -1,11 +1,11 @@
 import 'reflect-metadata';
 import type { CausalEngine, CausalStorageAdapter } from '@causal/core';
 import { InMemoryStorageAdapter } from '@causal/core';
-import { Injectable, Module } from '@nestjs/common';
+import { Inject, Injectable, Module } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { describe, expect, it } from 'vitest';
 import { CausalModule } from './causal.module.js';
-import { CAUSAL_ENGINE, CAUSAL_STORAGE_ADAPTER } from './constants.js';
+import { CAUSAL_ENGINE, CAUSAL_MODULE_OPTIONS, CAUSAL_STORAGE_ADAPTER } from './constants.js';
 import { Workflow } from './decorators.js';
 import type { CausalModuleOptions } from './types.js';
 
@@ -103,6 +103,36 @@ describe('CausalModule.forRoot', () => {
         process.env.CAUSAL_ENCRYPTION_KEY = previous;
       }
     }
+  });
+
+  it('exposes CAUSAL_MODULE_OPTIONS/CAUSAL_ENGINE/CAUSAL_STORAGE_ADAPTER to sibling modules as a global module', async () => {
+    // A feature module that does NOT import CausalModule itself — mirrors
+    // e.g. a controller module that applies RedactResponseInterceptor, which
+    // itself depends on CAUSAL_MODULE_OPTIONS via DI. Nest resolves every
+    // provider's constructor dependencies eagerly while compiling the
+    // module graph, so this only succeeds if CausalModule is actually global.
+    @Injectable()
+    class FeatureService {
+      constructor(
+        @Inject(CAUSAL_MODULE_OPTIONS) public readonly options: CausalModuleOptions,
+        @Inject(CAUSAL_ENGINE) public readonly engine: CausalEngine,
+        @Inject(CAUSAL_STORAGE_ADAPTER) public readonly storage: CausalStorageAdapter,
+      ) {}
+    }
+
+    @Module({ providers: [FeatureService] })
+    class FeatureModule {}
+
+    const moduleRef = await Test.createTestingModule({
+      imports: [CausalModule.forRoot({ storage: new InMemoryStorageAdapter() }), FeatureModule],
+    }).compile();
+
+    const feature = moduleRef.get(FeatureService);
+    expect(feature.options).toBeDefined();
+    expect(feature.engine).toBeDefined();
+    expect(feature.storage).toBeDefined();
+
+    await moduleRef.close();
   });
 });
 

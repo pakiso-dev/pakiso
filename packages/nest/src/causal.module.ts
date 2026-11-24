@@ -38,6 +38,12 @@ export class CausalModule implements OnModuleInit, OnModuleDestroy {
   static forRoot(options: CausalModuleOptions): DynamicModule {
     return {
       module: CausalModule,
+      // Global so any feature module can `@Inject(CAUSAL_ENGINE)` /
+      // `@Inject(CAUSAL_STORAGE_ADAPTER)` — or use `RedactResponseInterceptor`,
+      // which itself depends on `CAUSAL_MODULE_OPTIONS` — without every
+      // module that uses Causal having to re-import `CausalModule` (which
+      // would otherwise instantiate a second, independent storage adapter).
+      global: true,
       imports: [DiscoveryModule],
       providers: [
         { provide: CAUSAL_MODULE_OPTIONS, useValue: options },
@@ -45,13 +51,14 @@ export class CausalModule implements OnModuleInit, OnModuleDestroy {
         engineProvider,
         WorkflowExplorer,
       ],
-      exports: [CAUSAL_STORAGE_ADAPTER, CAUSAL_ENGINE],
+      exports: [CAUSAL_MODULE_OPTIONS, CAUSAL_STORAGE_ADAPTER, CAUSAL_ENGINE],
     };
   }
 
   static forRootAsync(options: CausalModuleAsyncOptions): DynamicModule {
     return {
       module: CausalModule,
+      global: true,
       imports: [DiscoveryModule, ...(options.imports ?? [])],
       providers: [
         {
@@ -63,7 +70,7 @@ export class CausalModule implements OnModuleInit, OnModuleDestroy {
         engineProvider,
         WorkflowExplorer,
       ],
-      exports: [CAUSAL_STORAGE_ADAPTER, CAUSAL_ENGINE],
+      exports: [CAUSAL_MODULE_OPTIONS, CAUSAL_STORAGE_ADAPTER, CAUSAL_ENGINE],
     };
   }
 
