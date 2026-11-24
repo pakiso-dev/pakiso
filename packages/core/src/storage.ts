@@ -1,0 +1,98 @@
+/**
+ * BYOS (Bring-Your-Own-Storage) contract. The core runtime owns execution
+ * semantics while delegating persistence to this adapter interface, so any
+ * database (Prisma, Drizzle, TypeORM, DynamoDB, Redis, ...) can back a
+ * Causal run as long as it satisfies these guarantees.
+ */
+
+export type CausalRunStatus =
+  | 'PENDING'
+  | 'RUNNING'
+  | 'WAITING_ATTESTATION'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED';
+
+export type CausalEventType =
+  | 'WORKFLOW_STARTED'
+  | 'STEP_COMPLETED'
+  | 'ATTESTATION_REQUESTED'
+  | 'ATTESTATION_RECEIVED'
+  | 'WORKFLOW_COMPLETED'
+  | 'WORKFLOW_FAILED'
+  | 'WORKFLOW_CANCELLED';
+
+export interface CausalRunRecord<
+  TInput = Record<string, unknown>,
+  TOutput = Record<string, unknown>,
+> {
+  id: string;
+  workflowName: string;
+  correlationKey: string | null;
+  idempotencyKey: string | null;
+  status: CausalRunStatus;
+  input: TInput;
+  output: TOutput | null;
+  error: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CausalEventRecord<TPayload = Record<string, unknown>> {
+  id: string;
+  runId: string;
+  seq: number;
+  type: CausalEventType;
+  stepName: string | null;
+  /** Wall-clock execution time in milliseconds for STEP_COMPLETED events; null for all other event types */
+  durationMs: number | null;
+  payload: TPayload;
+  createdAt: Date;
+}
+
+export interface CreateRunParams {
+  workflowName: string;
+  input: Record<string, unknown>;
+  correlationKey?: string;
+  idempotencyKey?: string;
+}
+
+export interface AppendEventParams {
+  runId: string;
+  /** Optimistic concurrency guard: adapter MUST reject if latest seq !== expectedSeq */
+  expectedSeq: number;
+  type: CausalEventType;
+  stepName?: string;
+  /** Wall-clock execution time in milliseconds, measured by ctx.step() around fn() */
+  durationMs?: number;
+  payload: Record<string, unknown>;
+}
+
+export interface UpdateRunStatusParams {
+  runId: string;
+  status: CausalRunStatus;
+  output?: Record<string, unknown> | null;
+  error?: string | null;
+}
+
+export interface CausalStorageAdapter {
+  connect?(): Promise<void>;
+  disconnect?(): Promise<void>;
+
+  createOrGetRun(params: CreateRunParams): Promise<{ run: CausalRunRecord; created: boolean }>;
+
+  getRun(runId: string): Promise<CausalRunRecord | null>;
+
+  getLatestRunByCorrelationKey(
+    workflowName: string,
+    correlationKey: string,
+  ): Promise<CausalRunRecord | null>;
+
+  /** Must return events strictly ordered ascending by `seq` (1..N) */
+  getEvents(runId: string): Promise<CausalEventRecord[]>;
+
+  /** Must enforce `expectedSeq` atomically and assign `seq = expectedSeq + 1` */
+  appendEvent(params: AppendEventParams): Promise<CausalEventRecord>;
+
+  updateRunStatus(params: UpdateRunStatusParams): Promise<CausalRunRecord>;
+}
