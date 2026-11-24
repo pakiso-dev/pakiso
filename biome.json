@@ -12,7 +12,8 @@
       "**/node_modules/**",
       "**/coverage/**",
       "**/generated/**",
-      "**/.turbo/**"
+      "**/.turbo/**",
+      "**/.vitepress/cache/**"
     ]
   },
   "formatter": {

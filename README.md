@@ -15,6 +15,7 @@ full architecture, contracts, and phased roadmap.
 | [`@causal/storage-prisma`](./packages/storage-prisma) | Multi-dialect Prisma storage adapter (Postgres/MySQL/SQLite)      |
 | [`@causal/cli`](./packages/cli)                   | Developer CLI (`causal init` / `causal inspect` / `causal replay`) |
 | [`@causal/example-api`](./packages/example-api)   | Example NestJS app: a durable user-onboarding workflow with email/compliance attestation gates |
+| [`@causal/docs`](./packages/docs)                 | Public developer documentation site (VitePress) |
 
 ## Development
 
@@ -29,3 +30,12 @@ pnpm lint
 This is a pnpm workspace orchestrated with Turborepo. Each package builds with
 `tsup` (dual ESM/CJS + type declarations) and is tested with Vitest. Linting and
 formatting are handled by Biome. Releases are managed with Changesets.
+
+## Documentation
+
+```bash
+pnpm docs:dev    # serve the docs site locally
+pnpm docs:build  # build the static site into packages/docs/dist
+```
+
+See [packages/docs](./packages/docs) for the source.

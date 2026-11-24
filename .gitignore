@@ -10,3 +10,4 @@ coverage/
 generated/
 *.db
 *.db-journal
+.vitepress/cache/

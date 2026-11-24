@@ -1,0 +1,18 @@
+{
+  "name": "@causal/docs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Public developer documentation site for Causal.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.5.0"
+  }
+}

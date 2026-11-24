@@ -13,7 +13,9 @@
     "format": "biome format --write .",
     "typecheck": "turbo run typecheck",
     "changeset": "changeset",
-    "release": "turbo run build && changeset publish"
+    "release": "turbo run build && changeset publish",
+    "docs:dev": "pnpm --filter @causal/docs dev",
+    "docs:build": "pnpm --filter @causal/docs build"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
