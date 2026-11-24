@@ -4,6 +4,7 @@ import { InProcessCausalEngine } from './causal-engine.js';
 import { CausalDivergenceError } from './errors.js';
 import { InMemoryStorageAdapter } from './in-memory-storage-adapter.js';
 import type { CausalContext } from './runtime.js';
+import type { CausalStorageAdapter } from './storage.js';
 
 function createEngine() {
   const storage = new InMemoryStorageAdapter();
@@ -544,11 +545,42 @@ describe('InProcessCausalEngine attestation deadlines', () => {
   });
 
   it('returns an empty array when the storage adapter does not support findExpiredWaitingRuns', async () => {
-    const storage = new InMemoryStorageAdapter();
-    // biome-ignore lint/performance/noDelete: simulating an adapter that genuinely lacks this optional method
-    delete (storage as { findExpiredWaitingRuns?: unknown }).findExpiredWaitingRuns;
+    const inner = new InMemoryStorageAdapter();
+    // A fresh object delegating only the required methods — `delete` on an
+    // instance can't remove a method defined on the class prototype, so this
+    // is the correct way to simulate an adapter that genuinely lacks an
+    // optional method.
+    const storage: CausalStorageAdapter = {
+      createOrGetRun: (params) => inner.createOrGetRun(params),
+      getRun: (runId) => inner.getRun(runId),
+      getLatestRunByCorrelationKey: (workflowName, correlationKey) =>
+        inner.getLatestRunByCorrelationKey(workflowName, correlationKey),
+      getEvents: (runId) => inner.getEvents(runId),
+      appendEvent: (params) => inner.appendEvent(params),
+      updateRunStatus: (params) => inner.updateRunStatus(params),
+    };
     const engine = new InProcessCausalEngine({ storage });
 
     expect(await engine.expireOverdueAttestations()).toEqual([]);
+  });
+
+  it('proceeds without distributed locking when the adapter does not implement acquireLease', async () => {
+    const inner = new InMemoryStorageAdapter();
+    const storage: CausalStorageAdapter = {
+      createOrGetRun: (params) => inner.createOrGetRun(params),
+      getRun: (runId) => inner.getRun(runId),
+      getLatestRunByCorrelationKey: (workflowName, correlationKey) =>
+        inner.getLatestRunByCorrelationKey(workflowName, correlationKey),
+      getEvents: (runId) => inner.getEvents(runId),
+      appendEvent: (params) => inner.appendEvent(params),
+      updateRunStatus: (params) => inner.updateRunStatus(params),
+    };
+    const engine = new InProcessCausalEngine({ storage });
+    engine.registerWorkflow('wf', async () => ({ ok: true }));
+
+    const run = await engine.startWorkflow({ workflowName: 'wf', input: {} });
+
+    expect(run.status).toBe('COMPLETED');
+    expect(run.output).toEqual({ ok: true });
   });
 });

@@ -1,8 +1,11 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
+import { SpanStatusCode, trace } from '@opentelemetry/api';
 import { CausalDivergenceError, WorkflowSuspendedError } from './errors.js';
 import type { AttestationOptions, CausalContext, StepOptions } from './runtime.js';
 import type { CausalEventRecord, CausalEventType, CausalStorageAdapter } from './storage.js';
+
+const tracer = trace.getTracer('@causal/core');
 
 const causalContextStorage = new AsyncLocalStorage<CausalContext>();
 
@@ -117,6 +120,25 @@ export function createCausalContext(options: CreateCausalContextOptions): Create
       }
       cursor += 1;
 
+      // Emit a span reflecting the step's *original* historical execution,
+      // backdated using its recorded durationMs — not a fresh real-time span —
+      // since the step itself is never actually re-executed here. Note this
+      // intentionally re-emits the same historical span on every pass that
+      // re-walks past this already-completed step (e.g. each later resume),
+      // consistent with "this pass observed this step in the journal".
+      const endTime = recorded.createdAt;
+      const startTime =
+        recorded.durationMs !== null ? new Date(endTime.getTime() - recorded.durationMs) : endTime;
+      const historicalSpan = tracer.startSpan(stepName, {
+        startTime,
+        attributes: {
+          'causal.run_id': runId,
+          'causal.step_name': stepName,
+          'causal.replayed': true,
+        },
+      });
+      historicalSpan.end(endTime);
+
       const override = stubs?.[stepName];
       if (override !== undefined) {
         return override as TResult;
@@ -129,8 +151,26 @@ export function createCausalContext(options: CreateCausalContextOptions): Create
     }
 
     const stubResult = isReplaying ? stepOptions?.stubResult : undefined;
+    const span = tracer.startSpan(stepName, {
+      attributes: {
+        'causal.run_id': runId,
+        'causal.step_name': stepName,
+        'causal.replayed': false,
+      },
+    });
+
     const start = performance.now();
-    const result = stubResult !== undefined ? (stubResult as TResult) : await fn();
+    let result: TResult;
+    try {
+      result = stubResult !== undefined ? (stubResult as TResult) : await fn();
+      span.setStatus({ code: SpanStatusCode.OK });
+    } catch (error) {
+      span.recordException(error instanceof Error ? error : String(error));
+      span.setStatus({ code: SpanStatusCode.ERROR });
+      throw error;
+    } finally {
+      span.end();
+    }
     const durationMs = Math.round(performance.now() - start);
 
     await recordNewEvent('STEP_COMPLETED', stepName, { result }, durationMs);

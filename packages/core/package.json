@@ -29,7 +29,9 @@
     "test": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0"
+  },
   "peerDependencies": {
     "vitest": "^2.0.0"
   },
@@ -39,6 +41,8 @@
     }
   },
   "devDependencies": {
+    "@opentelemetry/context-async-hooks": "^1.9.0",
+    "@opentelemetry/sdk-trace-base": "^1.9.0",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"

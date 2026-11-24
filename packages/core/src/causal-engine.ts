@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { SpanStatusCode, context as otelContext, trace } from '@opentelemetry/api';
 import { type PendingSignal, createCausalContext, runWithCausalContext } from './causal-context.js';
 import { LeaseConflictError, WorkflowSuspendedError } from './errors.js';
 import type {
@@ -8,6 +9,8 @@ import type {
   WorkflowHandler,
 } from './runtime.js';
 import type { CausalRunRecord, CausalStorageAdapter } from './storage.js';
+
+const tracer = trace.getTracer('@causal/core');
 
 const DEFAULT_LEASE_DURATION_MS = 30_000;
 
@@ -123,8 +126,19 @@ export class InProcessCausalEngine implements CausalEngine {
       ...(stubs !== undefined ? { stubs } : {}),
     });
 
+    const span = tracer.startSpan('causal.workflow.replay', {
+      attributes: {
+        'causal.run_id': run.id,
+        'causal.workflow_name': run.workflowName,
+        ...(run.correlationKey ? { 'causal.correlation_key': run.correlationKey } : {}),
+      },
+    });
+
     try {
-      const output = await runWithCausalContext(context, () => handler(run.input, context));
+      const output = await otelContext.with(trace.setSpan(otelContext.active(), span), () =>
+        runWithCausalContext(context, () => handler(run.input, context)),
+      );
+      span.setStatus({ code: SpanStatusCode.OK });
       // Reflects what this replay pass actually produced (including any stub
       // overrides) without ever persisting it — replay must never mutate
       // real storage.
@@ -132,9 +146,15 @@ export class InProcessCausalEngine implements CausalEngine {
     } catch (error) {
       // A still-suspended run replaying cleanly up to its last recorded gate is expected, not a failure.
       if (error instanceof WorkflowSuspendedError) {
+        span.setAttribute('causal.suspended', true);
+        span.setStatus({ code: SpanStatusCode.OK });
         return { ...run, status: 'WAITING_ATTESTATION' };
       }
+      span.recordException(error instanceof Error ? error : String(error));
+      span.setStatus({ code: SpanStatusCode.ERROR });
       throw error;
+    } finally {
+      span.end();
     }
   }
 
@@ -273,8 +293,18 @@ export class InProcessCausalEngine implements CausalEngine {
       ...passOptions,
     });
 
+    const span = tracer.startSpan('causal.workflow.execute', {
+      attributes: {
+        'causal.run_id': run.id,
+        'causal.workflow_name': run.workflowName,
+        ...(run.correlationKey ? { 'causal.correlation_key': run.correlationKey } : {}),
+      },
+    });
+
     try {
-      const output = await runWithCausalContext(context, () => handler(run.input, context));
+      const output = await otelContext.with(trace.setSpan(otelContext.active(), span), () =>
+        runWithCausalContext(context, () => handler(run.input, context)),
+      );
 
       await this.storage.appendEvent({
         runId: run.id,
@@ -282,6 +312,7 @@ export class InProcessCausalEngine implements CausalEngine {
         type: 'WORKFLOW_COMPLETED',
         payload: { output },
       });
+      span.setStatus({ code: SpanStatusCode.OK });
       return await this.storage.updateRunStatus({
         runId: run.id,
         status: 'COMPLETED',
@@ -290,12 +321,17 @@ export class InProcessCausalEngine implements CausalEngine {
       });
     } catch (error) {
       if (error instanceof WorkflowSuspendedError) {
+        span.setAttribute('causal.suspended', true);
+        span.setStatus({ code: SpanStatusCode.OK });
         return await this.storage.updateRunStatus({
           runId: run.id,
           status: 'WAITING_ATTESTATION',
           attestationExpiresAt: error.expiresAt,
         });
       }
+
+      span.recordException(error instanceof Error ? error : String(error));
+      span.setStatus({ code: SpanStatusCode.ERROR });
 
       const message = error instanceof Error ? error.message : String(error);
       await this.storage.appendEvent({
@@ -310,6 +346,8 @@ export class InProcessCausalEngine implements CausalEngine {
         error: message,
         attestationExpiresAt: null,
       });
+    } finally {
+      span.end();
     }
   }
 
