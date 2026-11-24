@@ -172,7 +172,7 @@ describe('InProcessCausalEngine', () => {
   });
 
   it('replays a completed run with a step stub override', async () => {
-    const { engine } = createEngine();
+    const { storage, engine } = createEngine();
     engine.registerWorkflow('checkout', async (input: { orderId: string }, ctx) => {
       const charge = await ctx.step('charge-card', async () => ({ chargeId: 'ch_real' }));
       return { orderId: input.orderId, chargeId: charge.chargeId };
@@ -188,8 +188,13 @@ describe('InProcessCausalEngine', () => {
       'charge-card': { chargeId: 'ch_stubbed' },
     });
 
-    // replayRun does not mutate the stored run; the override only affects this local pass.
-    expect(replayed.output).toEqual({ orderId: 'ORD-1', chargeId: 'ch_real' });
+    // The returned record reflects what this replay pass actually produced...
+    expect(replayed.output).toEqual({ orderId: 'ORD-1', chargeId: 'ch_stubbed' });
+    // ...but the stub must never be persisted back to the real stored run.
+    expect((await storage.getRun(run.id))?.output).toEqual({
+      orderId: 'ORD-1',
+      chargeId: 'ch_real',
+    });
   });
 
   it('replays a still-suspended run cleanly without throwing', async () => {

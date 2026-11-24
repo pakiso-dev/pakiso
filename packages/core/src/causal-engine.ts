@@ -108,15 +108,18 @@ export class InProcessCausalEngine implements CausalEngine {
     });
 
     try {
-      await runWithCausalContext(context, () => handler(run.input, context));
+      const output = await runWithCausalContext(context, () => handler(run.input, context));
+      // Reflects what this replay pass actually produced (including any stub
+      // overrides) without ever persisting it — replay must never mutate
+      // real storage.
+      return { ...run, status: 'COMPLETED', output, error: null };
     } catch (error) {
       // A still-suspended run replaying cleanly up to its last recorded gate is expected, not a failure.
-      if (!(error instanceof WorkflowSuspendedError)) {
-        throw error;
+      if (error instanceof WorkflowSuspendedError) {
+        return { ...run, status: 'WAITING_ATTESTATION' };
       }
+      throw error;
     }
-
-    return run;
   }
 
   private async resume<TPayload extends Record<string, unknown>>(

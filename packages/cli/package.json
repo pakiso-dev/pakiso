@@ -29,10 +29,12 @@
   },
   "dependencies": {
     "@causal/core": "workspace:*",
+    "@causal/storage-prisma": "workspace:*",
     "@clack/prompts": "^0.9.0",
     "cli-table3": "^0.6.5",
     "commander": "^12.1.0",
-    "picocolors": "^1.1.1"
+    "picocolors": "^1.1.1",
+    "prisma": "^6.1.0"
   },
   "devDependencies": {
     "tsup": "^8.3.5",
