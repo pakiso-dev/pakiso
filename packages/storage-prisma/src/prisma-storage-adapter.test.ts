@@ -100,4 +100,59 @@ describe('PrismaStorageAdapter (SQLite)', () => {
     expect(updated.status).toBe('CANCELLED');
     expect(updated.output).toBeNull();
   });
+
+  it('grants a lease when unleased, and rejects a different owner while it is held', async () => {
+    const adapter = await freshAdapter();
+    const { run } = await adapter.createOrGetRun({ workflowName: 'wf', input: {} });
+
+    const grantedToA = await adapter.acquireLease({
+      runId: run.id,
+      leaseOwner: 'worker-a',
+      leaseDurationMs: 10_000,
+    });
+    expect(grantedToA).toBe(true);
+
+    const grantedToB = await adapter.acquireLease({
+      runId: run.id,
+      leaseOwner: 'worker-b',
+      leaseDurationMs: 10_000,
+    });
+    expect(grantedToB).toBe(false);
+  });
+
+  it('allows acquiring an expired lease and releasing frees it for another owner', async () => {
+    const adapter = await freshAdapter();
+    const { run } = await adapter.createOrGetRun({ workflowName: 'wf', input: {} });
+
+    await adapter.acquireLease({ runId: run.id, leaseOwner: 'worker-a', leaseDurationMs: -1 });
+    const grantedAfterExpiry = await adapter.acquireLease({
+      runId: run.id,
+      leaseOwner: 'worker-b',
+      leaseDurationMs: 10_000,
+    });
+    expect(grantedAfterExpiry).toBe(true);
+
+    await adapter.releaseLease({ runId: run.id, leaseOwner: 'worker-b' });
+    const grantedAfterRelease = await adapter.acquireLease({
+      runId: run.id,
+      leaseOwner: 'worker-c',
+      leaseDurationMs: 10_000,
+    });
+    expect(grantedAfterRelease).toBe(true);
+  });
+
+  it('releaseLease is a no-op when called by a non-owner', async () => {
+    const adapter = await freshAdapter();
+    const { run } = await adapter.createOrGetRun({ workflowName: 'wf', input: {} });
+
+    await adapter.acquireLease({ runId: run.id, leaseOwner: 'worker-a', leaseDurationMs: 10_000 });
+    await adapter.releaseLease({ runId: run.id, leaseOwner: 'worker-b' });
+
+    const stillHeld = await adapter.acquireLease({
+      runId: run.id,
+      leaseOwner: 'worker-b',
+      leaseDurationMs: 10_000,
+    });
+    expect(stillHeld).toBe(false);
+  });
 });

@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { ConcurrencyConflictError } from './errors.js';
 import type {
+  AcquireLeaseParams,
   AppendEventParams,
   CausalEventRecord,
   CausalRunRecord,
   CausalStorageAdapter,
   CreateRunParams,
+  ReleaseLeaseParams,
   UpdateRunStatusParams,
 } from './storage.js';
 
@@ -18,6 +20,7 @@ export class InMemoryStorageAdapter implements CausalStorageAdapter {
   private readonly eventsByRunId = new Map<string, CausalEventRecord[]>();
   private readonly runIdByIdempotencyKey = new Map<string, string>();
   private readonly runIdsByCorrelationKey = new Map<string, string[]>();
+  private readonly leasesByRunId = new Map<string, { owner: string; expiresAt: number }>();
 
   async createOrGetRun(
     params: CreateRunParams,
@@ -130,6 +133,26 @@ export class InMemoryStorageAdapter implements CausalStorageAdapter {
 
     this.runsById.set(run.id, updated);
     return updated;
+  }
+
+  async acquireLease(params: AcquireLeaseParams): Promise<boolean> {
+    const now = Date.now();
+    const existing = this.leasesByRunId.get(params.runId);
+    if (existing && existing.owner !== params.leaseOwner && existing.expiresAt > now) {
+      return false;
+    }
+    this.leasesByRunId.set(params.runId, {
+      owner: params.leaseOwner,
+      expiresAt: now + params.leaseDurationMs,
+    });
+    return true;
+  }
+
+  async releaseLease(params: ReleaseLeaseParams): Promise<void> {
+    const existing = this.leasesByRunId.get(params.runId);
+    if (existing && existing.owner === params.leaseOwner) {
+      this.leasesByRunId.delete(params.runId);
+    }
   }
 
   private idempotencyIndexKey(workflowName: string, idempotencyKey: string): string {

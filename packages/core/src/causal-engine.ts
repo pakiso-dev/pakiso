@@ -1,5 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { type PendingSignal, createCausalContext, runWithCausalContext } from './causal-context.js';
-import { WorkflowSuspendedError } from './errors.js';
+import { LeaseConflictError, WorkflowSuspendedError } from './errors.js';
 import type {
   CausalEngine,
   SignalWorkflowParams,
@@ -8,8 +9,19 @@ import type {
 } from './runtime.js';
 import type { CausalRunRecord, CausalStorageAdapter } from './storage.js';
 
+const DEFAULT_LEASE_DURATION_MS = 30_000;
+
 export interface InProcessCausalEngineOptions {
   storage: CausalStorageAdapter;
+  /**
+   * Identifies this engine instance when acquiring execution leases (e.g. a
+   * hostname+pid or a UUID per replica). Defaults to a random UUID generated
+   * once per engine instance. Only relevant if `storage` implements
+   * `acquireLease`/`releaseLease`.
+   */
+  leaseOwner?: string;
+  /** How long an acquired lease is held before another worker may steal it. Defaults to 30s. */
+  leaseDurationMs?: number;
 }
 
 interface ExecutionPassOptions {
@@ -28,9 +40,13 @@ interface ExecutionPassOptions {
 export class InProcessCausalEngine implements CausalEngine {
   private readonly storage: CausalStorageAdapter;
   private readonly handlers = new Map<string, WorkflowHandler>();
+  private readonly leaseOwner: string;
+  private readonly leaseDurationMs: number;
 
   constructor(options: InProcessCausalEngineOptions) {
     this.storage = options.storage;
+    this.leaseOwner = options.leaseOwner ?? randomUUID();
+    this.leaseDurationMs = options.leaseDurationMs ?? DEFAULT_LEASE_DURATION_MS;
   }
 
   registerWorkflow(name: string, handler: WorkflowHandler): void {
@@ -156,6 +172,41 @@ export class InProcessCausalEngine implements CausalEngine {
   }
 
   private async executeRun(
+    run: CausalRunRecord,
+    handler: WorkflowHandler,
+    passOptions: ExecutionPassOptions,
+  ): Promise<CausalRunRecord> {
+    const leaseAcquired = await this.acquireLease(run.id);
+    if (!leaseAcquired) {
+      throw new LeaseConflictError(run.id, this.leaseOwner);
+    }
+
+    try {
+      return await this.executeRunLocked(run, handler, passOptions);
+    } finally {
+      await this.releaseLease(run.id);
+    }
+  }
+
+  private async acquireLease(runId: string): Promise<boolean> {
+    if (!this.storage.acquireLease) {
+      // Adapter doesn't support distributed leasing (e.g. InMemoryStorageAdapter
+      // used for tests/local dev) — proceed without it; single-process callers
+      // are safe regardless.
+      return true;
+    }
+    return this.storage.acquireLease({
+      runId,
+      leaseOwner: this.leaseOwner,
+      leaseDurationMs: this.leaseDurationMs,
+    });
+  }
+
+  private async releaseLease(runId: string): Promise<void> {
+    await this.storage.releaseLease?.({ runId, leaseOwner: this.leaseOwner });
+  }
+
+  private async executeRunLocked(
     run: CausalRunRecord,
     handler: WorkflowHandler,
     passOptions: ExecutionPassOptions,

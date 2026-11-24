@@ -395,3 +395,61 @@ describe('InProcessCausalEngine', () => {
     );
   });
 });
+
+describe('InProcessCausalEngine lease locking', () => {
+  it('releases the lease after a run completes, allowing a later pass to acquire it', async () => {
+    const { storage, engine } = createEngine();
+    engine.registerWorkflow('wf', async () => ({ ok: true }));
+
+    const run = await engine.startWorkflow({ workflowName: 'wf', input: {} });
+    expect(run.status).toBe('COMPLETED');
+
+    // If the lease weren't released, a second engine instance couldn't acquire it.
+    const granted = await storage.acquireLease({
+      runId: run.id,
+      leaseOwner: 'another-worker',
+      leaseDurationMs: 10_000,
+    });
+    expect(granted).toBe(true);
+  });
+
+  it('releases the lease even when the handler throws', async () => {
+    const { storage, engine } = createEngine();
+    engine.registerWorkflow('wf', async () => {
+      throw new Error('boom');
+    });
+
+    const run = await engine.startWorkflow({ workflowName: 'wf', input: {} });
+    expect(run.status).toBe('FAILED');
+
+    const granted = await storage.acquireLease({
+      runId: run.id,
+      leaseOwner: 'another-worker',
+      leaseDurationMs: 10_000,
+    });
+    expect(granted).toBe(true);
+  });
+
+  it('throws LeaseConflictError when resuming a run whose lease is held by another worker', async () => {
+    const storage = new InMemoryStorageAdapter();
+    const engine = new InProcessCausalEngine({ storage, leaseOwner: 'worker-a' });
+    engine.registerWorkflow('wf', async (_input, ctx) => {
+      await ctx.awaitAttestation('gate');
+      return {};
+    });
+
+    const started = await engine.startWorkflow({ workflowName: 'wf', input: {} });
+    expect(started.status).toBe('WAITING_ATTESTATION');
+
+    // Simulate another replica (worker-b) already processing this exact run's resume.
+    await storage.acquireLease({
+      runId: started.id,
+      leaseOwner: 'worker-b',
+      leaseDurationMs: 10_000,
+    });
+
+    await expect(
+      engine.signalByRunId(started.id, { gateName: 'gate', payload: {} }),
+    ).rejects.toThrow('Could not acquire execution lease');
+  });
+});

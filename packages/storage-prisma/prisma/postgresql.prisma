@@ -25,6 +25,10 @@ model CausalRun {
   error          String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  /// Distributed execution lease (Phase 4): the worker/replica id currently
+  /// processing this run, and when that claim expires. Null when unleased.
+  lockedBy       String?
+  leaseExpiresAt DateTime?
 
   events CausalEvent[]
 

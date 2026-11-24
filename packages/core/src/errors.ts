@@ -40,3 +40,19 @@ export class WorkflowSuspendedError extends Error {
     this.name = 'WorkflowSuspendedError';
   }
 }
+
+/**
+ * Thrown when the engine cannot acquire a run's execution lease because
+ * another worker/replica currently holds it — prevents two pods from
+ * processing the same run concurrently (e.g. both reacting to the same
+ * signal at once).
+ */
+export class LeaseConflictError extends Error {
+  constructor(
+    public readonly runId: string,
+    public readonly leaseOwner: string,
+  ) {
+    super(`Could not acquire execution lease for run "${runId}": held by another worker`);
+    this.name = 'LeaseConflictError';
+  }
+}

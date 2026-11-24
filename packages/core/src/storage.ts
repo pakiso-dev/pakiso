@@ -75,6 +75,19 @@ export interface UpdateRunStatusParams {
   error?: string | null;
 }
 
+export interface AcquireLeaseParams {
+  runId: string;
+  /** Identifies the worker/replica attempting to acquire the lease (e.g. hostname+pid or a UUID) */
+  leaseOwner: string;
+  /** How long the lease is held before it's considered expired and stealable by another owner */
+  leaseDurationMs: number;
+}
+
+export interface ReleaseLeaseParams {
+  runId: string;
+  leaseOwner: string;
+}
+
 export interface CausalStorageAdapter {
   connect?(): Promise<void>;
   disconnect?(): Promise<void>;
@@ -95,4 +108,17 @@ export interface CausalStorageAdapter {
   appendEvent(params: AppendEventParams): Promise<CausalEventRecord>;
 
   updateRunStatus(params: UpdateRunStatusParams): Promise<CausalRunRecord>;
+
+  /**
+   * Attempts to acquire an exclusive execution lease on a run, so two
+   * replicas/pods can't process the same run concurrently (e.g. both
+   * reacting to the same signal at once). Must atomically succeed only if no
+   * other owner currently holds an unexpired lease on this run. Optional —
+   * adapters that omit it are only safe for single-process use; the engine
+   * treats its absence as "proceed without distributed locking".
+   */
+  acquireLease?(params: AcquireLeaseParams): Promise<boolean>;
+
+  /** Releases a previously acquired lease; a no-op if not currently held by `leaseOwner`. */
+  releaseLease?(params: ReleaseLeaseParams): Promise<void>;
 }

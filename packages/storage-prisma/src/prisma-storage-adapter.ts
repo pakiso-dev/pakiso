@@ -1,4 +1,5 @@
 import {
+  type AcquireLeaseParams,
   type AppendEventParams,
   type CausalEventRecord,
   type CausalEventType,
@@ -7,6 +8,7 @@ import {
   type CausalStorageAdapter,
   ConcurrencyConflictError,
   type CreateRunParams,
+  type ReleaseLeaseParams,
   type UpdateRunStatusParams,
 } from '@causal/core';
 
@@ -59,6 +61,10 @@ export interface PrismaCausalClient {
       where: Record<string, unknown>;
       data: Record<string, unknown>;
     }): Promise<CausalRunRow>;
+    updateMany(args: {
+      where: Record<string, unknown>;
+      data: Record<string, unknown>;
+    }): Promise<{ count: number }>;
   };
   causalEvent: {
     findMany(args: {
@@ -253,5 +259,30 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
       },
     });
     return mapRun(updated);
+  }
+
+  async acquireLease(params: AcquireLeaseParams): Promise<boolean> {
+    const now = new Date();
+    const leaseExpiresAt = new Date(now.getTime() + params.leaseDurationMs);
+
+    // Succeeds only if no unexpired lease is held by someone else — the
+    // conditional WHERE clause is the atomicity guarantee here, not a
+    // separate transaction: a concurrent racer's updateMany simply matches
+    // zero rows once this one commits.
+    const result = await this.prisma.causalRun.updateMany({
+      where: {
+        id: params.runId,
+        OR: [{ lockedBy: null }, { leaseExpiresAt: { lt: now } }, { lockedBy: params.leaseOwner }],
+      },
+      data: { lockedBy: params.leaseOwner, leaseExpiresAt },
+    });
+    return result.count === 1;
+  }
+
+  async releaseLease(params: ReleaseLeaseParams): Promise<void> {
+    await this.prisma.causalRun.updateMany({
+      where: { id: params.runId, lockedBy: params.leaseOwner },
+      data: { lockedBy: null, leaseExpiresAt: null },
+    });
   }
 }
