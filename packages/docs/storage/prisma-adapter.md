@@ -50,6 +50,12 @@ Swap `postgresql.prisma` for `mysql.prisma` or `sqlite.prisma` as needed.
 dialect detection and schema application from `CAUSAL_DATABASE_URL` — use
 it instead of the manual `prisma` commands above where convenient.
 
+The client your app imports at runtime is a separate copy you generate
+yourself from your own schema file — `causal init` only applies the schema
+to the database and generates a client for the CLI's own internal use. See
+[Deployment](/fundamentals/deployment) for the full picture, including how
+this fits into CI/CD for a multi-replica deployment.
+
 #### Usage
 
 ```ts

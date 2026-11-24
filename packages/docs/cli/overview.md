@@ -25,6 +25,11 @@ Prints progress and `✔ causal init complete` on success. Fails with
 `CAUSAL_DATABASE_URL must be set before running "causal init".` if the
 variable is missing.
 
+Note that the client it generates is only consumed by `causal
+inspect`/`causal replay` themselves — it is unrelated to the Prisma client
+your own application imports. See [Deployment](/fundamentals/deployment)
+for how `causal init` fits into a full build/release sequence.
+
 #### `causal inspect <runId>`
 
 Prints a run's metadata and its full event journal — `seq`, `type`,

@@ -27,6 +27,7 @@ const sidebar = [
     collapsed: true,
     items: [
       { text: 'Custom storage adapters', link: '/fundamentals/custom-storage-adapters' },
+      { text: 'Deployment', link: '/fundamentals/deployment' },
       { text: 'Encryption', link: '/fundamentals/encryption' },
       { text: 'Idempotency', link: '/fundamentals/idempotency' },
       { text: 'Redaction', link: '/fundamentals/redaction' },

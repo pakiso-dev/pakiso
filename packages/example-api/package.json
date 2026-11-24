@@ -10,6 +10,8 @@
   "scripts": {
     "generate:sqlite": "prisma generate --schema=prisma/schema.prisma",
     "pretest": "pnpm generate:sqlite",
+    "prebuild": "pnpm generate:sqlite",
+    "prestart": "pnpm generate:sqlite",
     "build": "tsup",
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",

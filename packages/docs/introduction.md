@@ -35,6 +35,19 @@ is durably recorded, so the function can be **resumed** after a crash or
 | [`@causal/cli`](/cli/overview) | Developer CLI (`causal init` / `causal inspect` / `causal replay`) |
 | `@causal/example-api` | Example NestJS app: see the [onboarding recipe](/recipes/onboarding-walkthrough) |
 
+#### What Causal does (and doesn't) store
+
+Causal's storage adapter is not your application's business data store. It
+persists only what the engine needs to resume and replay a run
+deterministically — run metadata, the workflow's input/output, and an
+append-only journal of completed steps and attestation gates, all as opaque
+JSON. Your actual business entities (users, orders, accounts, ...) continue
+to live in your own database tables, typically written as a side effect
+inside a step — see
+[what Causal does (and doesn't) store](/overview/storage-adapters#what-causal-does-and-doesn-t-store)
+for the full picture, including how to associate a run with one of your own
+business entities.
+
 #### Installation
 
 ```bash

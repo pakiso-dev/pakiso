@@ -6,6 +6,27 @@ to a `CausalStorageAdapter`. This BYOS (bring-your-own-storage) contract is
 deliberately small so any database — Prisma, Drizzle, TypeORM, DynamoDB,
 Redis, ... — can back a run.
 
+#### What Causal does (and doesn't) store
+
+A `CausalStorageAdapter`'s tables (`CausalRun`/`CausalEvent`, or whatever
+your adapter calls them) are generic and workflow-agnostic:
+`input`/`output`/`payload` are opaque JSON blobs, not typed columns per
+business entity. **This is not your application's data store.** Causal
+persists only what the engine itself needs to resume and replay a run
+deterministically — it is not where you model or query your business
+entities (users, orders, accounts, ...). Those continue to live in your own
+database tables, typically written as a side effect inside a step. The
+[onboarding recipe](/recipes/onboarding-walkthrough)'s `createAccount` step
+makes this explicit: it's a stand-in for "persisting a new user record in
+your own domain database," not something Causal does for you.
+
+That said, the journal does carry real business data: whatever you pass as
+workflow `input`/`output`, or return from a step, is stored verbatim in
+these JSON columns — an applicant's email and date of birth, a computed
+risk score, a reviewer's notes, and so on. That's exactly why
+[encryption](/fundamentals/encryption) and [redaction](/fundamentals/redaction)
+are first-class concerns here, rather than an afterthought bolted on later.
+
 #### The contract
 
 ```ts
@@ -80,6 +101,68 @@ interface CausalEventRecord<TPayload = Record<string, unknown>> {
   createdAt: Date;
 }
 ```
+
+#### Relating a run to your business entities
+
+Causal doesn't maintain foreign keys into your own schema, but there are
+two straightforward ways to associate a run with one of your business
+entities — use either, or both, depending on the lookup direction you need.
+
+**1. Run → entity, via `correlationKey`.** Pass a string that encodes your
+business identifier when starting the workflow; namespacing it by workflow
+name is a good habit to avoid collisions across different workflows:
+
+```ts
+const run = await engine.startWorkflow({
+  workflowName: 'user-onboarding',
+  input: { email, fullName, dateOfBirth },
+  correlationKey: `onboarding:${email}`,
+});
+```
+
+Later, look the run up by that same business key, without needing its
+generated ID:
+
+```ts
+const run = await storage.getLatestRunByCorrelationKey(
+  'user-onboarding',
+  `onboarding:${email}`,
+);
+```
+
+This is the pattern the [onboarding recipe](/recipes/onboarding-walkthrough)
+uses for its `GET /onboarding/by-email/:email` endpoint, and the one
+`engine.signalByCorrelationKey` uses to resume a run without the caller
+knowing its ID (see [Attestation gates](/overview/attestation-gates)).
+`getLatestRunByCorrelationKey` returns the single *latest* run for that key,
+so it's best suited to "one active run per business key at a time" lookups.
+
+**2. Entity → run, by storing the run ID on your own record.** Inside a
+workflow handler, `ctx.runId` is the current run's ID — persist it as a
+column on your own table (e.g. `users.onboarding_run_id`) so your
+application can join straight from a business entity to its execution
+journal:
+
+```ts
+@Workflow({ name: 'user-onboarding' })
+async onboard(input: OnboardUserInput, ctx: CausalContext) {
+  const account = await ctx.step('create-account', () =>
+    this.usersRepository.save({ email: input.email, onboardingRunId: ctx.runId }),
+  );
+  // ...
+}
+```
+
+(Inside a `@Recordable()`-decorated method instead, use
+`getCurrentCausalContext()?.runId` from `@causal/core` — `@Recordable()`
+methods aren't called with `ctx` as a parameter.)
+
+From application code, `storage.getRun(user.onboardingRunId)` and
+`storage.getEvents(user.onboardingRunId)` then give you that entity's
+current workflow status and full journal on demand. This direction scales
+better than `correlationKey` once an entity can go through more than one run
+over its lifetime (e.g. a user who re-attempts onboarding) and you need to
+track exactly which run applies.
 
 #### Optional capabilities
 
