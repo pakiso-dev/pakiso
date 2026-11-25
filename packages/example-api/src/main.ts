@@ -9,13 +9,16 @@ async function bootstrap(): Promise<void> {
   const config = new DocumentBuilder()
     .setTitle('Pakiso Example API')
     .setDescription(
-      'Interactive docs for the user-onboarding workflow demonstrating ' +
-        '@pakiso/nest: durable steps, attestation gates (email verification, ' +
-        'compliance approval), and the REST control plane for starting runs ' +
-        'and signaling suspended gates.',
+      'Interactive docs for two workflows demonstrating @pakiso/nest: a ' +
+        'user-onboarding workflow (durable steps, email-verification and ' +
+        'compliance-approval attestation gates) and a support-refund agent ' +
+        'workflow (an LLM-driven agent whose refund tool call pauses for a ' +
+        "human's sign-off above an auto-approve limit) — plus the REST " +
+        'control plane for starting runs and signaling suspended gates.',
     )
     .setVersion('0.1.0')
     .addTag('onboarding')
+    .addTag('refund-agent')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);

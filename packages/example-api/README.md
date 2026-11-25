@@ -1,14 +1,25 @@
 # `@pakiso/example-api`
 
-A runnable NestJS API demonstrating `@pakiso/nest` end to end with a durable
-**user-onboarding** workflow: create an account, wait for the user to verify
-their email, run an (automated) compliance/KYC check, and — only when that
-check flags the applicant as high-risk — suspend for a human compliance
-officer's sign-off before activating the account.
+A runnable NestJS API demonstrating `@pakiso/nest` end to end with two
+durable workflows:
 
-It exists purely as a reference: a small, realistic use case showing how the
+* **`user-onboarding`** — create an account, wait for the user to verify
+  their email, run an (automated) compliance/KYC check, and — only when that
+  check flags the applicant as high-risk — suspend for a human compliance
+  officer's sign-off before activating the account.
+* **`support-refund-agent`** — an LLM-driven support agent evaluates a
+  refund request (denying likely-duplicate claims outright), and — only
+  when it proposes a refund above an auto-approve limit — suspends for a
+  human support lead's sign-off *before* its refund tool call executes. See
+  [`src/refund-agent`](./src/refund-agent) if you're pairing Pakiso with an
+  agent/LLM framework: the shape is the same `ctx.step()`/
+  `ctx.awaitAttestation()` machinery as onboarding, just with a
+  non-deterministic model call standing behind one step instead of a human
+  filling out a form.
+
+Both exist purely as references: small, realistic use cases showing how the
 pieces documented in [docs/pakiso_implementation_plan.md](../../docs/pakiso_implementation_plan.md)
-fit together in a real app, not a package you depend on.
+fit together in a real app, not packages you depend on.
 
 ## What it demonstrates
 
@@ -47,10 +58,11 @@ pnpm dev
 
 The server listens on `http://localhost:3000` (override with `PORT`). Open
 `http://localhost:3000/docs` for an interactive Swagger UI covering every
-route — start a run, verify its email, approve/reject compliance, and
-inspect the run's journal, all without leaving the browser.
+route for both workflows — start a run, verify its email or approve/reject
+compliance or a refund, and inspect the run's journal, all without leaving
+the browser.
 
-## Walking through the workflow via curl
+## Walking through the onboarding workflow via curl
 
 ```bash
 # 1. Start an onboarding run. The workflow suspends almost immediately
@@ -79,6 +91,34 @@ curl -s -X POST http://localhost:3000/onboarding/$RUN_ID/compliance-approval \
 
 # 5. Look up the latest run for an email address without needing the runId.
 curl -s http://localhost:3000/onboarding/by-email/ada@example.com | jq
+```
+
+## Walking through the refund agent via curl
+
+```bash
+# 1. Submit a refund request above the $100 auto-approve limit. The agent
+#    proposes refunding it, so the run suspends awaiting human-approval.
+curl -s -X POST http://localhost:3000/refund-requests \
+  -H 'Content-Type: application/json' \
+  -d '{"ticketId":"TCK-1001","customerEmail":"ada@example.com","refundAmountCents":15000,"reason":"Charged twice for the same order"}'
+# => { "runId": "...", "status": "WAITING_ATTESTATION", "correlationKey": "support-refund:TCK-1001" }
+
+RUN_ID=<runId from above>
+
+# 2. Inspect the run's status and full execution journal — note the
+#    ATTESTATION_REQUESTED event for the "human-approval" gate.
+curl -s http://localhost:3000/refund-requests/$RUN_ID | jq
+
+# 3. Sign off as the human support lead. The agent's refund tool call
+#    (issueRefund) then executes exactly once and the run completes.
+curl -s -X POST http://localhost:3000/refund-requests/$RUN_ID/human-approval \
+  -H 'Content-Type: application/json' \
+  -d '{"approved":true,"reviewer":"support-lead-bot"}'
+
+# A refund under the limit (e.g. 2500 cents) is auto-approved straight
+# through, with no human-approval gate at all. A reason containing the word
+# "duplicate" is denied outright by the agent — also with no gate, since the
+# agent never calls the refund tool in the first place.
 ```
 
 ## Persisting runs & viewing them in Prisma Studio
@@ -122,6 +162,7 @@ database rows directly.
 pnpm --filter @pakiso/example-api test
 ```
 
-The test suite drives the full HTTP lifecycle (including both the low-risk
-"straight through" path and the high-risk compliance-gate path) against an
+The test suite drives the full HTTP lifecycle for both workflows — the
+onboarding straight-through/compliance-gate paths, and the refund agent's
+deny/auto-approve/escalate-approve/escalate-reject paths — against an
 in-memory `PakisoStorageAdapter`, so it needs no external services.
