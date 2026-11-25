@@ -15,7 +15,7 @@ import { DashboardRunsController } from './dashboard-runs.controller.js';
  * This module intentionally applies no authentication/authorization of its
  * own, consistent with Pakiso's existing stance that deciding who may
  * inspect/signal runs is the host application's concern (see the
- * [REST control plane docs](https://pakiso.dev/nestjs/rest-control-plane)).
+ * [REST control plane docs](https://pakiso-dev.github.io/pakiso/nestjs/rest-control-plane)).
  * Guard it with your own mechanism, e.g. a global guard scoped to the
  * `pakiso-dashboard` prefix, or a reverse-proxy rule.
  */

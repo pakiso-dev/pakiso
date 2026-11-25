@@ -111,9 +111,9 @@ key during rotation, while `encode()` always uses `activeKey`. (If you're
 using [`@pakiso/nest`](../nest)'s `PakisoModule`, this wiring from
 `PAKISO_ENCRYPTION_KEY`/`PAKISO_ENCRYPTION_KEY_ID` env vars happens for you
 automatically.) See the
-[Encryption](https://pakiso.dev/fundamentals/encryption) docs for details.
+[Encryption](https://pakiso-dev.github.io/pakiso/fundamentals/encryption) docs for details.
 
 ## Documentation
 
 Full docs, including the complete `PakisoEngine`/`ctx` API reference, replay,
-idempotency, and redaction, live at [pakiso.dev](https://pakiso.dev).
+idempotency, and redaction, live at [pakiso-dev.github.io/pakiso](https://pakiso-dev.github.io/pakiso/).

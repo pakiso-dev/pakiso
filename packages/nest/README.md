@@ -125,4 +125,4 @@ this pattern.
 
 Full docs — including the discovery service internals, response redaction,
 and the embeddable [`@pakiso/dashboard`](../dashboard) — live at
-[pakiso.dev](https://pakiso.dev).
+[pakiso-dev.github.io/pakiso](https://pakiso-dev.github.io/pakiso/).
