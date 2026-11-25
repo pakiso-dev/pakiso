@@ -1,5 +1,11 @@
 # @pakiso/core
 
+## 1.0.2
+
+### Patch Changes
+
+- 4d0e4d3: Fix docs links pointing to the unregistered `pakiso.dev` domain — the actual docs site is hosted at https://pakiso-dev.github.io/pakiso/ (GitHub Pages project site, see `packages/docs/.vitepress/config.ts`).
+
 ## 1.0.1
 
 ### Patch Changes
