@@ -1,5 +1,7 @@
 import { defineConfig } from 'vitepress';
 
+const base = '/pakiso/';
+
 /**
  * Single ordered sidebar tree. VitePress derives both the collapsible left-hand
  * nav and the prev/next pager at the bottom of each article from this list, so
@@ -70,12 +72,14 @@ const sidebar = [
 export default defineConfig({
   title: 'Pakiso',
   description: 'A stateful, deterministic, auditable execution framework for Node.js and NestJS.',
+  // Served as a GitHub Pages project site at https://pakiso-dev.github.io/pakiso/
+  base,
   srcDir: '.',
   srcExclude: ['README.md'],
   outDir: 'dist',
   cleanUrls: true,
   lastUpdated: true,
-  head: [['link', { rel: 'icon', type: 'image/png', href: '/favicon.png' }]],
+  head: [['link', { rel: 'icon', type: 'image/png', href: `${base}favicon.png` }]],
 
   themeConfig: {
     logo: { light: '/logo-light.png', dark: '/logo-dark.png' },
