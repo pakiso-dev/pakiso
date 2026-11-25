@@ -1,5 +1,13 @@
 # @pakiso/cli
 
+## 1.0.2
+
+### Patch Changes
+
+- Updated dependencies [4d0e4d3]
+  - @pakiso/core@1.0.2
+  - @pakiso/storage-prisma@1.0.2
+
 ## 1.0.1
 
 ### Patch Changes
