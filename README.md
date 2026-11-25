@@ -48,3 +48,8 @@ pnpm docs:build  # build the static site into packages/docs/dist
 ```
 
 See [packages/docs](./packages/docs) for the source.
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the branching model, pull request
+workflow, changesets, and the automated release/deployment pipeline.
