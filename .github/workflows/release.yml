@@ -18,6 +18,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # A PAT is required instead of the default GITHUB_TOKEN: commits
+          # authored by the default token don't trigger other workflow runs
+          # (to prevent infinite loops), so merging the "chore: version
+          # packages" PR below would otherwise never re-trigger this
+          # workflow to actually run the publish step.
+          token: ${{ secrets.GH_PAT }}
 
       - uses: pnpm/action-setup@v4
         with:
@@ -44,5 +50,5 @@ jobs:
           commit: "chore: version packages"
           title: "chore: version packages"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
