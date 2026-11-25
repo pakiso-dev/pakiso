@@ -20,7 +20,7 @@ import { defineConfig } from 'vite';
  */
 export default defineConfig({
   root: resolve(__dirname, 'frontend'),
-  base: '/causal-dashboard/',
+  base: '/pakiso-dashboard/',
   plugins: [tailwindcss(), react()],
   build: {
     outDir: resolve(__dirname, 'dist/public'),

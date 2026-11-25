@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Aes256GcmPayloadCodec } from './aes-256-gcm-payload-codec.js';
 import { CodedStorageAdapter } from './coded-storage-adapter.js';
 import { InMemoryStorageAdapter } from './in-memory-storage-adapter.js';
-import type { CausalStorageAdapter } from './storage.js';
+import type { PakisoStorageAdapter } from './storage.js';
 
 function createCodedAdapter() {
   const inner = new InMemoryStorageAdapter();
@@ -23,7 +23,7 @@ describe('CodedStorageAdapter', () => {
     });
 
     const rawRun = await inner.getRun(run.id);
-    expect(rawRun?.input.__causalEnc).toBe(true);
+    expect(rawRun?.input.__pakisoEnc).toBe(true);
     expect(JSON.stringify(rawRun?.input)).not.toContain('4111111111111111');
 
     const decoded = await adapter.getRun(run.id);
@@ -43,7 +43,7 @@ describe('CodedStorageAdapter', () => {
     });
 
     const [rawEvent] = await inner.getEvents(run.id);
-    expect(rawEvent?.payload.__causalEnc).toBe(true);
+    expect(rawEvent?.payload.__pakisoEnc).toBe(true);
 
     const [decodedEvent] = await adapter.getEvents(run.id);
     expect(decodedEvent?.payload).toEqual({ chargeId: 'ch_1' });
@@ -60,7 +60,7 @@ describe('CodedStorageAdapter', () => {
     });
 
     const rawRun = await inner.getRun(run.id);
-    expect(rawRun?.output?.__causalEnc).toBe(true);
+    expect(rawRun?.output?.__pakisoEnc).toBe(true);
 
     const decoded = await adapter.getRun(run.id);
     expect(decoded?.output).toEqual({ ok: true });
@@ -85,7 +85,7 @@ describe('CodedStorageAdapter', () => {
   it('delegates connect()/disconnect() to the wrapped adapter when present', async () => {
     let connected = false;
     let disconnected = false;
-    const inner: CausalStorageAdapter = {
+    const inner: PakisoStorageAdapter = {
       connect: async () => {
         connected = true;
       },

@@ -16,7 +16,7 @@ export class ConcurrencyConflictError extends Error {
 }
 
 /** Thrown during replay if code executes a different step/gate than recorded in journal */
-export class CausalDivergenceError extends Error {
+export class PakisoDivergenceError extends Error {
   constructor(
     public readonly runId: string,
     public readonly seq: number,
@@ -24,13 +24,13 @@ export class CausalDivergenceError extends Error {
     public readonly actualStep: string,
   ) {
     super(
-      `Causal divergence on run "${runId}" at seq ${seq}: expected "${expectedStep}", got "${actualStep}"`,
+      `Pakiso divergence on run "${runId}" at seq ${seq}: expected "${expectedStep}", got "${actualStep}"`,
     );
-    this.name = 'CausalDivergenceError';
+    this.name = 'PakisoDivergenceError';
   }
 }
 
-/** Internal control-flow signal caught by CausalEngine to park run in WAITING_ATTESTATION */
+/** Internal control-flow signal caught by PakisoEngine to park run in WAITING_ATTESTATION */
 export class WorkflowSuspendedError extends Error {
   constructor(
     public readonly runId: string,

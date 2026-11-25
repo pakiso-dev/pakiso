@@ -1,23 +1,23 @@
 import { pathToFileURL } from 'node:url';
-import type { CausalStorageAdapter } from '@causal/core';
-import { PrismaStorageAdapter } from '@causal/storage-prisma';
-import type { PrismaCausalClient } from '@causal/storage-prisma';
+import type { PakisoStorageAdapter } from '@pakiso/core';
+import { PrismaStorageAdapter } from '@pakiso/storage-prisma';
+import type { PrismaPakisoClient } from '@pakiso/storage-prisma';
 import { detectDialect, generatedClientPathFor } from './dialect.js';
 
 interface GeneratedClientModule {
-  PrismaClient: new (options: { datasourceUrl: string }) => PrismaCausalClient;
+  PrismaClient: new (options: { datasourceUrl: string }) => PrismaPakisoClient;
 }
 
 /**
- * Builds a PrismaStorageAdapter from CAUSAL_DATABASE_URL by detecting the
+ * Builds a PrismaStorageAdapter from PAKISO_DATABASE_URL by detecting the
  * dialect and dynamically importing the matching generated client — the one
- * `causal init` produces via `prisma generate`.
+ * `pakiso init` produces via `prisma generate`.
  */
-export async function createStorageAdapterFromEnv(): Promise<CausalStorageAdapter> {
-  const databaseUrl = process.env.CAUSAL_DATABASE_URL;
+export async function createStorageAdapterFromEnv(): Promise<PakisoStorageAdapter> {
+  const databaseUrl = process.env.PAKISO_DATABASE_URL;
   if (!databaseUrl) {
     throw new Error(
-      'CAUSAL_DATABASE_URL must be set (e.g. postgresql://..., mysql://..., or file:./dev.db)',
+      'PAKISO_DATABASE_URL must be set (e.g. postgresql://..., mysql://..., or file:./dev.db)',
     );
   }
 
@@ -29,7 +29,7 @@ export async function createStorageAdapterFromEnv(): Promise<CausalStorageAdapte
     clientModule = (await import(pathToFileURL(clientPath).href)) as GeneratedClientModule;
   } catch {
     throw new Error(
-      `No generated Prisma client found for dialect "${dialect}" at ${clientPath}. Run "causal init" first.`,
+      `No generated Prisma client found for dialect "${dialect}" at ${clientPath}. Run "pakiso init" first.`,
     );
   }
 

@@ -1,9 +1,9 @@
 # REST control plane
 
-`@causal/nest` does **not** ship controllers or routes — starting runs,
+`@pakiso/nest` does **not** ship controllers or routes — starting runs,
 signaling gates, and inspecting run status over HTTP is left to your
-application, built on top of the injected `CAUSAL_ENGINE` and
-`CAUSAL_STORAGE_ADAPTER` tokens. This page shows the pattern used by the
+application, built on top of the injected `PAKISO_ENGINE` and
+`PAKISO_STORAGE_ADAPTER` tokens. This page shows the pattern used by the
 bundled [example app](/recipes/onboarding-walkthrough); adapt it to your own
 routes/DTOs.
 
@@ -14,12 +14,12 @@ with a `correlationKey` derived from a business identifier, so the run can
 later be looked up or signaled without needing its generated ID:
 
 ```ts
-import { CAUSAL_ENGINE, readIdempotencyKey } from '@causal/nest';
-import type { CausalEngine } from '@causal/core';
+import { PAKISO_ENGINE, readIdempotencyKey } from '@pakiso/nest';
+import type { PakisoEngine } from '@pakiso/core';
 
 @Controller('onboarding')
 export class OnboardingController {
-  constructor(@Inject(CAUSAL_ENGINE) private readonly engine: CausalEngine) {}
+  constructor(@Inject(PAKISO_ENGINE) private readonly engine: PakisoEngine) {}
 
   @Post()
   @HttpCode(HttpStatus.ACCEPTED) // the workflow typically suspends almost immediately
@@ -99,8 +99,8 @@ async getRun(@Param('runId') runId: string) {
 If you want to browse *every* run (not just one you already have the id or
 correlation key for) — e.g. "show me every run waiting on approval" — see
 the [dashboard](/nestjs/dashboard) package instead of hand-rolling a listing
-endpoint: `@causal/dashboard` mounts a read-only UI + JSON API for exactly
-this, reusing the same `CAUSAL_STORAGE_ADAPTER` provider.
+endpoint: `@pakiso/dashboard` mounts a read-only UI + JSON API for exactly
+this, reusing the same `PAKISO_STORAGE_ADAPTER` provider.
 :::
 
 #### Redacting sensitive fields automatically

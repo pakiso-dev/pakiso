@@ -1,6 +1,6 @@
 # Decorators
 
-`@causal/nest` provides two **method** decorators — neither decorates a
+`@pakiso/nest` provides two **method** decorators — neither decorates a
 class.
 
 #### `@Workflow(options)`
@@ -23,7 +23,7 @@ same shape as any other workflow handler: `(input, ctx) => Promise<output>`.
 @Injectable()
 export class OrderWorkflow {
   @Workflow({ name: 'order-fulfillment' })
-  async fulfill(input: { orderId: string }, ctx: CausalContext) {
+  async fulfill(input: { orderId: string }, ctx: PakisoContext) {
     return { orderId: input.orderId, fulfilled: true };
   }
 }
@@ -54,7 +54,7 @@ export class PaymentsService {
 #### Combining them
 
 A workflow method can call a separate recordable service method — the
-decorator reads the currently-active `CausalContext` via
+decorator reads the currently-active `PakisoContext` via
 `AsyncLocalStorage` under the hood, so it works across the call even though
 `ctx` was never passed in explicitly:
 
@@ -80,7 +80,7 @@ export class OrderWorkflow {
 ```
 
 Use `@Recordable()` when a step is a plain reusable service method; use
-`ctx.step(stepName, fn)` directly (see [Causal context](/overview/causal-context))
+`ctx.step(stepName, fn)` directly (see [Pakiso context](/overview/pakiso-context))
 when you need an explicit step name that differs from the method name, or
 the call site isn't itself a provider method — the
 [onboarding recipe](/recipes/onboarding-walkthrough) uses both styles side

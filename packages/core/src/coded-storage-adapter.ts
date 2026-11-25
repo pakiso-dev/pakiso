@@ -1,23 +1,23 @@
 import type { PayloadCodec } from './security.js';
 import type {
   AppendEventParams,
-  CausalEventRecord,
-  CausalRunRecord,
-  CausalStorageAdapter,
   CreateRunParams,
+  PakisoEventRecord,
+  PakisoRunRecord,
+  PakisoStorageAdapter,
   UpdateRunStatusParams,
 } from './storage.js';
 
 /**
- * Wraps any CausalStorageAdapter so run input/output and event payloads are
+ * Wraps any PakisoStorageAdapter so run input/output and event payloads are
  * transparently encrypted via a PayloadCodec before reaching the wrapped
  * adapter, and decrypted on read. Run metadata (status, timestamps, keys)
  * and event metadata (seq, type, stepName, durationMs) pass through
  * unchanged — only the opaque payload fields are encrypted at rest.
  */
-export class CodedStorageAdapter implements CausalStorageAdapter {
+export class CodedStorageAdapter implements PakisoStorageAdapter {
   constructor(
-    private readonly inner: CausalStorageAdapter,
+    private readonly inner: PakisoStorageAdapter,
     private readonly codec: PayloadCodec,
   ) {}
 
@@ -31,13 +31,13 @@ export class CodedStorageAdapter implements CausalStorageAdapter {
 
   async createOrGetRun(
     params: CreateRunParams,
-  ): Promise<{ run: CausalRunRecord; created: boolean }> {
+  ): Promise<{ run: PakisoRunRecord; created: boolean }> {
     const encodedInput = await this.codec.encode(params.input);
     const { run, created } = await this.inner.createOrGetRun({ ...params, input: encodedInput });
     return { run: await this.decodeRun(run), created };
   }
 
-  async getRun(runId: string): Promise<CausalRunRecord | null> {
+  async getRun(runId: string): Promise<PakisoRunRecord | null> {
     const run = await this.inner.getRun(runId);
     return run ? this.decodeRun(run) : null;
   }
@@ -45,23 +45,23 @@ export class CodedStorageAdapter implements CausalStorageAdapter {
   async getLatestRunByCorrelationKey(
     workflowName: string,
     correlationKey: string,
-  ): Promise<CausalRunRecord | null> {
+  ): Promise<PakisoRunRecord | null> {
     const run = await this.inner.getLatestRunByCorrelationKey(workflowName, correlationKey);
     return run ? this.decodeRun(run) : null;
   }
 
-  async getEvents(runId: string): Promise<CausalEventRecord[]> {
+  async getEvents(runId: string): Promise<PakisoEventRecord[]> {
     const events = await this.inner.getEvents(runId);
     return Promise.all(events.map((event) => this.decodeEvent(event)));
   }
 
-  async appendEvent(params: AppendEventParams): Promise<CausalEventRecord> {
+  async appendEvent(params: AppendEventParams): Promise<PakisoEventRecord> {
     const encodedPayload = await this.codec.encode(params.payload);
     const event = await this.inner.appendEvent({ ...params, payload: encodedPayload });
     return this.decodeEvent(event);
   }
 
-  async updateRunStatus(params: UpdateRunStatusParams): Promise<CausalRunRecord> {
+  async updateRunStatus(params: UpdateRunStatusParams): Promise<PakisoRunRecord> {
     const forwarded: UpdateRunStatusParams = {
       runId: params.runId,
       status: params.status,
@@ -74,7 +74,7 @@ export class CodedStorageAdapter implements CausalStorageAdapter {
     return this.decodeRun(run);
   }
 
-  private async decodeRun(run: CausalRunRecord): Promise<CausalRunRecord> {
+  private async decodeRun(run: PakisoRunRecord): Promise<PakisoRunRecord> {
     return {
       ...run,
       input: await this.codec.decode(run.input),
@@ -82,7 +82,7 @@ export class CodedStorageAdapter implements CausalStorageAdapter {
     };
   }
 
-  private async decodeEvent(event: CausalEventRecord): Promise<CausalEventRecord> {
+  private async decodeEvent(event: PakisoEventRecord): Promise<PakisoEventRecord> {
     return {
       ...event,
       payload: await this.codec.decode(event.payload),

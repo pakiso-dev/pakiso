@@ -1,11 +1,11 @@
 /**
  * Payload encryption & security boundary. `PayloadCodec` lets any
- * `CausalStorageAdapter` be wrapped transparently with at-rest encryption via
+ * `PakisoStorageAdapter` be wrapped transparently with at-rest encryption via
  * `CodedStorageAdapter`, and `RedactionOptions` drives HTTP-layer masking.
  */
 
 export interface EncryptedEnvelope {
-  __causalEnc: true;
+  __pakisoEnc: true;
   kid: string;
   iv: string;
   tag: string;

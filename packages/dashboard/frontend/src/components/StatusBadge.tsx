@@ -1,6 +1,6 @@
-import type { CausalRunStatus } from '../types.js';
+import type { PakisoRunStatus } from '../types.js';
 
-const STATUS_STYLES: Record<CausalRunStatus, string> = {
+const STATUS_STYLES: Record<PakisoRunStatus, string> = {
   PENDING: 'bg-blue-50 text-blue-700 ring-blue-600/20',
   RUNNING: 'bg-blue-50 text-blue-700 ring-blue-600/20',
   WAITING_ATTESTATION: 'bg-amber-50 text-amber-700 ring-amber-600/20',
@@ -9,7 +9,7 @@ const STATUS_STYLES: Record<CausalRunStatus, string> = {
   CANCELLED: 'bg-gray-100 text-gray-600 ring-gray-500/10',
 };
 
-export function StatusBadge({ status }: { status: CausalRunStatus }) {
+export function StatusBadge({ status }: { status: PakisoRunStatus }) {
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap ring-1 ring-inset ${STATUS_STYLES[status]}`}

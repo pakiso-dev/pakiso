@@ -1,20 +1,20 @@
-# `@causal/example-api`
+# `@pakiso/example-api`
 
-A runnable NestJS API demonstrating `@causal/nest` end to end with a durable
+A runnable NestJS API demonstrating `@pakiso/nest` end to end with a durable
 **user-onboarding** workflow: create an account, wait for the user to verify
 their email, run an (automated) compliance/KYC check, and — only when that
 check flags the applicant as high-risk — suspend for a human compliance
 officer's sign-off before activating the account.
 
 It exists purely as a reference: a small, realistic use case showing how the
-pieces documented in [docs/causal_implementation_plan.md](../../docs/causal_implementation_plan.md)
+pieces documented in [docs/pakiso_implementation_plan.md](../../docs/pakiso_implementation_plan.md)
 fit together in a real app, not a package you depend on.
 
 ## What it demonstrates
 
-* **`CausalModule.forRootAsync()`** wired up with a storage adapter resolved
+* **`PakisoModule.forRootAsync()`** wired up with a storage adapter resolved
   at startup (see `src/storage.ts`): the zero-config `InMemoryStorageAdapter`
-  by default, or `@causal/storage-prisma`/SQLite when `CAUSAL_DATABASE_URL`
+  by default, or `@pakiso/storage-prisma`/SQLite when `PAKISO_DATABASE_URL`
   is set — handy for inspecting runs afterwards with Prisma Studio (below).
 * **`@Workflow()`** on `OnboardingService#onboard` — the single source of
   truth for the onboarding process, discovered automatically at bootstrap.
@@ -40,7 +40,7 @@ fit together in a real app, not a package you depend on.
 ## Running it
 
 ```bash
-pnpm --filter @causal/example-api dev
+pnpm --filter @pakiso/example-api dev
 # or, from this directory:
 pnpm dev
 ```
@@ -85,43 +85,43 @@ curl -s http://localhost:3000/onboarding/by-email/ada@example.com | jq
 
 By default this app uses the zero-config `InMemoryStorageAdapter` — runs
 disappear on restart, and there's nothing for Prisma Studio to show. Set
-`CAUSAL_DATABASE_URL` to a SQLite file to persist runs via
-`@causal/storage-prisma` instead (see `src/storage.ts`):
+`PAKISO_DATABASE_URL` to a SQLite file to persist runs via
+`@pakiso/storage-prisma` instead (see `src/storage.ts`):
 
 ```bash
 # One-time: generate the Prisma client for this package's schema.
-pnpm --filter @causal/example-api generate:sqlite
+pnpm --filter @pakiso/example-api generate:sqlite
 
 # Use an *absolute* file: URL — SQLite resolves relative paths relative to
 # the schema file's own directory, not your shell's cwd, which is a common
 # footgun here.
-export CAUSAL_DATABASE_URL="file:$(pwd)/packages/example-api/dev.db"
+export PAKISO_DATABASE_URL="file:$(pwd)/packages/example-api/dev.db"
 
 # Create the database/tables (first run only; safe to re-run).
-pnpm --filter @causal/example-api exec prisma db push --schema=prisma/schema.prisma
+pnpm --filter @pakiso/example-api exec prisma db push --schema=prisma/schema.prisma
 
 # Run the app against that database.
-pnpm --filter @causal/example-api dev
+pnpm --filter @pakiso/example-api dev
 ```
 
 Drive a run or two through the `curl` flow above, then — with the same
-`CAUSAL_DATABASE_URL` exported — open Prisma Studio in another terminal:
+`PAKISO_DATABASE_URL` exported — open Prisma Studio in another terminal:
 
 ```bash
-pnpm --filter @causal/example-api exec prisma studio --schema=prisma/schema.prisma
+pnpm --filter @pakiso/example-api exec prisma studio --schema=prisma/schema.prisma
 ```
 
 This opens `http://localhost:5555` with a browsable UI over the
-`causal_runs` and `causal_events` tables, showing exactly the same execution
+`pakiso_runs` and `pakiso_events` tables, showing exactly the same execution
 journal as `GET /onboarding/:runId` — unredacted, since Studio reads the raw
 database rows directly.
 
 ## Tests
 
 ```bash
-pnpm --filter @causal/example-api test
+pnpm --filter @pakiso/example-api test
 ```
 
 The test suite drives the full HTTP lifecycle (including both the low-risk
 "straight through" path and the high-risk compliance-gate path) against an
-in-memory `CausalStorageAdapter`, so it needs no external services.
+in-memory `PakisoStorageAdapter`, so it needs no external services.

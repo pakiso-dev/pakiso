@@ -28,7 +28,7 @@ function findPackageRoot(startDir: string): string {
   while (!existsSync(join(dir, 'package.json'))) {
     const parent = dirname(dir);
     if (parent === dir) {
-      throw new Error('@causal/dashboard: could not locate its own package root');
+      throw new Error('@pakiso/dashboard: could not locate its own package root');
     }
     dir = parent;
   }

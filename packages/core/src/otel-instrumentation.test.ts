@@ -6,8 +6,8 @@ import {
   SimpleSpanProcessor,
 } from '@opentelemetry/sdk-trace-base';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { InProcessCausalEngine } from './causal-engine.js';
 import { InMemoryStorageAdapter } from './in-memory-storage-adapter.js';
+import { InProcessPakisoEngine } from './pakiso-engine.js';
 
 let exporter: InMemorySpanExporter;
 let provider: BasicTracerProvider;
@@ -16,7 +16,7 @@ let contextManager: AsyncHooksContextManager;
 beforeAll(() => {
   // A production app wires its own OpenTelemetry SDK; this registers a
   // minimal in-memory one once for this file purely to assert on what
-  // @causal/core emits. Without an explicit context manager, the default
+  // @pakiso/core emits. Without an explicit context manager, the default
   // no-op one doesn't propagate the active span across async boundaries, so
   // step spans wouldn't nest correctly under the workflow span.
   //
@@ -59,9 +59,9 @@ function requireSpan(
 }
 
 describe('OpenTelemetry instrumentation', () => {
-  it('emits a causal.workflow.execute span with run/workflow/correlation attributes', async () => {
+  it('emits a pakiso.workflow.execute span with run/workflow/correlation attributes', async () => {
     const storage = new InMemoryStorageAdapter();
-    const engine = new InProcessCausalEngine({ storage });
+    const engine = new InProcessPakisoEngine({ storage });
     engine.registerWorkflow('checkout', async () => ({}));
 
     const run = await engine.startWorkflow({
@@ -71,17 +71,17 @@ describe('OpenTelemetry instrumentation', () => {
     });
 
     const spans = spansByName(exporter.getFinishedSpans());
-    const workflowSpan = requireSpan(spans, 'causal.workflow.execute');
+    const workflowSpan = requireSpan(spans, 'pakiso.workflow.execute');
     expect(workflowSpan).toBeDefined();
-    expect(workflowSpan.attributes['causal.run_id']).toBe(run.id);
-    expect(workflowSpan.attributes['causal.workflow_name']).toBe('checkout');
-    expect(workflowSpan.attributes['causal.correlation_key']).toBe('order:ORD-1');
+    expect(workflowSpan.attributes['pakiso.run_id']).toBe(run.id);
+    expect(workflowSpan.attributes['pakiso.workflow_name']).toBe('checkout');
+    expect(workflowSpan.attributes['pakiso.correlation_key']).toBe('order:ORD-1');
     expect(workflowSpan.status.code).toBe(SpanStatusCode.OK);
   });
 
-  it('nests a step span as a child of the workflow span, tagged causal.replayed=false for live execution', async () => {
+  it('nests a step span as a child of the workflow span, tagged pakiso.replayed=false for live execution', async () => {
     const storage = new InMemoryStorageAdapter();
-    const engine = new InProcessCausalEngine({ storage });
+    const engine = new InProcessPakisoEngine({ storage });
     engine.registerWorkflow('wf', async (_input, ctx) => {
       await ctx.step('charge-card', async () => ({ chargeId: 'ch_1' }));
       return {};
@@ -90,17 +90,17 @@ describe('OpenTelemetry instrumentation', () => {
     await engine.startWorkflow({ workflowName: 'wf', input: {} });
 
     const spans = spansByName(exporter.getFinishedSpans());
-    const workflowSpan = requireSpan(spans, 'causal.workflow.execute');
+    const workflowSpan = requireSpan(spans, 'pakiso.workflow.execute');
     const stepSpan = requireSpan(spans, 'charge-card');
     expect(stepSpan).toBeDefined();
     expect(stepSpan.parentSpanId).toBe(workflowSpan.spanContext().spanId);
-    expect(stepSpan.attributes['causal.replayed']).toBe(false);
+    expect(stepSpan.attributes['pakiso.replayed']).toBe(false);
     expect(stepSpan.status.code).toBe(SpanStatusCode.OK);
   });
 
   it('marks a step span ERROR with a recorded exception when the step itself throws', async () => {
     const storage = new InMemoryStorageAdapter();
-    const engine = new InProcessCausalEngine({ storage });
+    const engine = new InProcessPakisoEngine({ storage });
     engine.registerWorkflow('wf', async (_input, ctx) => {
       await ctx.step('risky-step', async () => {
         throw new Error('step failed');
@@ -117,7 +117,7 @@ describe('OpenTelemetry instrumentation', () => {
 
   it('marks the workflow span ERROR with a recorded exception when the handler throws', async () => {
     const storage = new InMemoryStorageAdapter();
-    const engine = new InProcessCausalEngine({ storage });
+    const engine = new InProcessPakisoEngine({ storage });
     engine.registerWorkflow('wf', async () => {
       throw new Error('boom');
     });
@@ -126,15 +126,15 @@ describe('OpenTelemetry instrumentation', () => {
 
     const workflowSpan = requireSpan(
       spansByName(exporter.getFinishedSpans()),
-      'causal.workflow.execute',
+      'pakiso.workflow.execute',
     );
     expect(workflowSpan.status.code).toBe(SpanStatusCode.ERROR);
     expect(workflowSpan.events.some((event) => event.name === 'exception')).toBe(true);
   });
 
-  it('marks the workflow span OK with causal.suspended when awaiting attestation', async () => {
+  it('marks the workflow span OK with pakiso.suspended when awaiting attestation', async () => {
     const storage = new InMemoryStorageAdapter();
-    const engine = new InProcessCausalEngine({ storage });
+    const engine = new InProcessPakisoEngine({ storage });
     engine.registerWorkflow('wf', async (_input, ctx) => {
       await ctx.awaitAttestation('gate');
       return {};
@@ -144,15 +144,15 @@ describe('OpenTelemetry instrumentation', () => {
 
     const workflowSpan = requireSpan(
       spansByName(exporter.getFinishedSpans()),
-      'causal.workflow.execute',
+      'pakiso.workflow.execute',
     );
     expect(workflowSpan.status.code).toBe(SpanStatusCode.OK);
-    expect(workflowSpan.attributes['causal.suspended']).toBe(true);
+    expect(workflowSpan.attributes['pakiso.suspended']).toBe(true);
   });
 
   it('emits a backdated historical step span on replay, reflecting the recorded durationMs', async () => {
     const storage = new InMemoryStorageAdapter();
-    const engine = new InProcessCausalEngine({ storage });
+    const engine = new InProcessPakisoEngine({ storage });
     engine.registerWorkflow('wf', async (_input, ctx) => {
       await ctx.step('slow-step', async () => {
         await new Promise((resolve) => setTimeout(resolve, 5));
@@ -170,9 +170,9 @@ describe('OpenTelemetry instrumentation', () => {
     await engine.replayRun(run.id);
 
     const spans = spansByName(exporter.getFinishedSpans());
-    expect(spans['causal.workflow.replay']).toBeDefined();
+    expect(spans['pakiso.workflow.replay']).toBeDefined();
     const replayedStepSpan = requireSpan(spans, 'slow-step');
-    expect(replayedStepSpan.attributes['causal.replayed']).toBe(true);
+    expect(replayedStepSpan.attributes['pakiso.replayed']).toBe(true);
     const observedDurationMs =
       replayedStepSpan.duration[0] * 1000 + replayedStepSpan.duration[1] / 1_000_000;
     expect(Math.round(observedDurationMs)).toBe(recordedDurationMs);

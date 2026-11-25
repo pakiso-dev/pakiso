@@ -1,12 +1,12 @@
-# Causal context
+# Pakiso context
 
-`CausalContext` is the second argument passed to every workflow handler. It
+`PakisoContext` is the second argument passed to every workflow handler. It
 is `AsyncLocalStorage`-backed, which means it's also accessible to nested
 async helpers without threading it explicitly through every call (see
-[`@Recordable()`](/nestjs/decorators) for how `@causal/nest` uses this).
+[`@Recordable()`](/nestjs/decorators) for how `@pakiso/nest` uses this).
 
 ```ts
-interface CausalContext {
+interface PakisoContext {
   readonly runId: string;
   readonly workflowName: string;
   readonly correlationKey: string | null;
@@ -43,7 +43,7 @@ The deterministic, replay-safe side-effect boundary:
 
 ```ts
 interface StepOptions {
-  /** Optional stub value injected during local `causal replay` */
+  /** Optional stub value injected during local `pakiso replay` */
   stubResult?: unknown;
 }
 
@@ -89,13 +89,13 @@ directly whenever the value must stay identical across resume and replay.
 #### Accessing the context outside a handler argument
 
 ```ts
-import { getCurrentCausalContext, runWithCausalContext } from '@causal/core';
+import { getCurrentPakisoContext, runWithPakisoContext } from '@pakiso/core';
 
-function getCurrentContext(): CausalContext | undefined {
-  return getCurrentCausalContext();
+function getCurrentContext(): PakisoContext | undefined {
+  return getCurrentPakisoContext();
 }
 ```
 
-`@causal/nest`'s [`@Recordable()`](/nestjs/decorators) decorator uses
+`@pakiso/nest`'s [`@Recordable()`](/nestjs/decorators) decorator uses
 exactly this to make an existing service method replay-safe without passing
 `ctx` into its call sites.

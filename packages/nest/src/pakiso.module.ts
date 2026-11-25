@@ -1,5 +1,3 @@
-import { InProcessCausalEngine } from '@causal/core';
-import type { CausalStorageAdapter } from '@causal/core';
 import {
   type DynamicModule,
   Inject,
@@ -9,60 +7,62 @@ import {
   type Provider,
 } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
-import { CAUSAL_ENGINE, CAUSAL_MODULE_OPTIONS, CAUSAL_STORAGE_ADAPTER } from './constants.js';
+import { InProcessPakisoEngine } from '@pakiso/core';
+import type { PakisoStorageAdapter } from '@pakiso/core';
+import { PAKISO_ENGINE, PAKISO_MODULE_OPTIONS, PAKISO_STORAGE_ADAPTER } from './constants.js';
 import { resolveStorageAdapter } from './storage-resolution.js';
-import type { CausalModuleAsyncOptions, CausalModuleOptions } from './types.js';
+import type { PakisoModuleAsyncOptions, PakisoModuleOptions } from './types.js';
 import { WorkflowExplorer } from './workflow-explorer.js';
 
 const storageAdapterProvider: Provider = {
-  provide: CAUSAL_STORAGE_ADAPTER,
-  useFactory: (options: CausalModuleOptions) => resolveStorageAdapter(options),
-  inject: [CAUSAL_MODULE_OPTIONS],
+  provide: PAKISO_STORAGE_ADAPTER,
+  useFactory: (options: PakisoModuleOptions) => resolveStorageAdapter(options),
+  inject: [PAKISO_MODULE_OPTIONS],
 };
 
 const engineProvider: Provider = {
-  provide: CAUSAL_ENGINE,
-  useFactory: (storage: CausalStorageAdapter) => new InProcessCausalEngine({ storage }),
-  inject: [CAUSAL_STORAGE_ADAPTER],
+  provide: PAKISO_ENGINE,
+  useFactory: (storage: PakisoStorageAdapter) => new InProcessPakisoEngine({ storage }),
+  inject: [PAKISO_STORAGE_ADAPTER],
 };
 
 /**
- * Wires a BYOS `CausalStorageAdapter` and `CausalEngine` into Nest's DI
+ * Wires a BYOS `PakisoStorageAdapter` and `PakisoEngine` into Nest's DI
  * container, connecting/disconnecting the storage adapter on module
  * init/destroy and discovering `@Workflow()`-decorated methods at bootstrap.
  */
 @Module({})
-export class CausalModule implements OnModuleInit, OnModuleDestroy {
-  constructor(@Inject(CAUSAL_STORAGE_ADAPTER) private readonly storage: CausalStorageAdapter) {}
+export class PakisoModule implements OnModuleInit, OnModuleDestroy {
+  constructor(@Inject(PAKISO_STORAGE_ADAPTER) private readonly storage: PakisoStorageAdapter) {}
 
-  static forRoot(options: CausalModuleOptions): DynamicModule {
+  static forRoot(options: PakisoModuleOptions): DynamicModule {
     return {
-      module: CausalModule,
-      // Global so any feature module can `@Inject(CAUSAL_ENGINE)` /
-      // `@Inject(CAUSAL_STORAGE_ADAPTER)` — or use `RedactResponseInterceptor`,
-      // which itself depends on `CAUSAL_MODULE_OPTIONS` — without every
-      // module that uses Causal having to re-import `CausalModule` (which
+      module: PakisoModule,
+      // Global so any feature module can `@Inject(PAKISO_ENGINE)` /
+      // `@Inject(PAKISO_STORAGE_ADAPTER)` — or use `RedactResponseInterceptor`,
+      // which itself depends on `PAKISO_MODULE_OPTIONS` — without every
+      // module that uses Pakiso having to re-import `PakisoModule` (which
       // would otherwise instantiate a second, independent storage adapter).
       global: true,
       imports: [DiscoveryModule],
       providers: [
-        { provide: CAUSAL_MODULE_OPTIONS, useValue: options },
+        { provide: PAKISO_MODULE_OPTIONS, useValue: options },
         storageAdapterProvider,
         engineProvider,
         WorkflowExplorer,
       ],
-      exports: [CAUSAL_MODULE_OPTIONS, CAUSAL_STORAGE_ADAPTER, CAUSAL_ENGINE],
+      exports: [PAKISO_MODULE_OPTIONS, PAKISO_STORAGE_ADAPTER, PAKISO_ENGINE],
     };
   }
 
-  static forRootAsync(options: CausalModuleAsyncOptions): DynamicModule {
+  static forRootAsync(options: PakisoModuleAsyncOptions): DynamicModule {
     return {
-      module: CausalModule,
+      module: PakisoModule,
       global: true,
       imports: [DiscoveryModule, ...(options.imports ?? [])],
       providers: [
         {
-          provide: CAUSAL_MODULE_OPTIONS,
+          provide: PAKISO_MODULE_OPTIONS,
           useFactory: options.useFactory,
           inject: options.inject ?? [],
         },
@@ -70,7 +70,7 @@ export class CausalModule implements OnModuleInit, OnModuleDestroy {
         engineProvider,
         WorkflowExplorer,
       ],
-      exports: [CAUSAL_MODULE_OPTIONS, CAUSAL_STORAGE_ADAPTER, CAUSAL_ENGINE],
+      exports: [PAKISO_MODULE_OPTIONS, PAKISO_STORAGE_ADAPTER, PAKISO_ENGINE],
     };
   }
 

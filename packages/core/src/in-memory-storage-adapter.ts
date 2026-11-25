@@ -3,12 +3,12 @@ import { ConcurrencyConflictError } from './errors.js';
 import type {
   AcquireLeaseParams,
   AppendEventParams,
-  CausalEventRecord,
-  CausalRunRecord,
-  CausalStorageAdapter,
   CreateRunParams,
   ListRunsParams,
   ListRunsResult,
+  PakisoEventRecord,
+  PakisoRunRecord,
+  PakisoStorageAdapter,
   ReleaseLeaseParams,
   UpdateRunStatusParams,
 } from './storage.js';
@@ -16,19 +16,19 @@ import type {
 const DEFAULT_LIST_RUNS_LIMIT = 20;
 
 /**
- * Zero-dependency CausalStorageAdapter backed by in-process Maps. Intended for
+ * Zero-dependency PakisoStorageAdapter backed by in-process Maps. Intended for
  * unit tests, examples, and local development — state is lost on process exit.
  */
-export class InMemoryStorageAdapter implements CausalStorageAdapter {
-  private readonly runsById = new Map<string, CausalRunRecord>();
-  private readonly eventsByRunId = new Map<string, CausalEventRecord[]>();
+export class InMemoryStorageAdapter implements PakisoStorageAdapter {
+  private readonly runsById = new Map<string, PakisoRunRecord>();
+  private readonly eventsByRunId = new Map<string, PakisoEventRecord[]>();
   private readonly runIdByIdempotencyKey = new Map<string, string>();
   private readonly runIdsByCorrelationKey = new Map<string, string[]>();
   private readonly leasesByRunId = new Map<string, { owner: string; expiresAt: number }>();
 
   async createOrGetRun(
     params: CreateRunParams,
-  ): Promise<{ run: CausalRunRecord; created: boolean }> {
+  ): Promise<{ run: PakisoRunRecord; created: boolean }> {
     if (params.idempotencyKey) {
       const existingId = this.runIdByIdempotencyKey.get(
         this.idempotencyIndexKey(params.workflowName, params.idempotencyKey),
@@ -40,7 +40,7 @@ export class InMemoryStorageAdapter implements CausalStorageAdapter {
     }
 
     const now = new Date();
-    const run: CausalRunRecord = {
+    const run: PakisoRunRecord = {
       id: randomUUID(),
       workflowName: params.workflowName,
       correlationKey: params.correlationKey ?? null,
@@ -74,14 +74,14 @@ export class InMemoryStorageAdapter implements CausalStorageAdapter {
     return { run, created: true };
   }
 
-  async getRun(runId: string): Promise<CausalRunRecord | null> {
+  async getRun(runId: string): Promise<PakisoRunRecord | null> {
     return this.runsById.get(runId) ?? null;
   }
 
   async getLatestRunByCorrelationKey(
     workflowName: string,
     correlationKey: string,
-  ): Promise<CausalRunRecord | null> {
+  ): Promise<PakisoRunRecord | null> {
     const ids = this.runIdsByCorrelationKey.get(
       this.correlationIndexKey(workflowName, correlationKey),
     );
@@ -92,11 +92,11 @@ export class InMemoryStorageAdapter implements CausalStorageAdapter {
     return this.runsById.get(latestId) ?? null;
   }
 
-  async getEvents(runId: string): Promise<CausalEventRecord[]> {
+  async getEvents(runId: string): Promise<PakisoEventRecord[]> {
     return [...(this.eventsByRunId.get(runId) ?? [])];
   }
 
-  async appendEvent(params: AppendEventParams): Promise<CausalEventRecord> {
+  async appendEvent(params: AppendEventParams): Promise<PakisoEventRecord> {
     const events = this.eventsByRunId.get(params.runId);
     if (!events) {
       throw new Error(`Cannot append event: unknown run "${params.runId}"`);
@@ -107,7 +107,7 @@ export class InMemoryStorageAdapter implements CausalStorageAdapter {
       throw new ConcurrencyConflictError(params.runId, params.expectedSeq);
     }
 
-    const event: CausalEventRecord = {
+    const event: PakisoEventRecord = {
       id: randomUUID(),
       runId: params.runId,
       seq: params.expectedSeq + 1,
@@ -122,13 +122,13 @@ export class InMemoryStorageAdapter implements CausalStorageAdapter {
     return event;
   }
 
-  async updateRunStatus(params: UpdateRunStatusParams): Promise<CausalRunRecord> {
+  async updateRunStatus(params: UpdateRunStatusParams): Promise<PakisoRunRecord> {
     const run = this.runsById.get(params.runId);
     if (!run) {
       throw new Error(`Cannot update status: unknown run "${params.runId}"`);
     }
 
-    const updated: CausalRunRecord = {
+    const updated: PakisoRunRecord = {
       ...run,
       status: params.status,
       output: params.output !== undefined ? params.output : run.output,
@@ -144,7 +144,7 @@ export class InMemoryStorageAdapter implements CausalStorageAdapter {
     return updated;
   }
 
-  async findExpiredWaitingRuns(now: Date): Promise<CausalRunRecord[]> {
+  async findExpiredWaitingRuns(now: Date): Promise<PakisoRunRecord[]> {
     return [...this.runsById.values()].filter(
       (run) =>
         run.status === 'WAITING_ATTESTATION' &&
@@ -174,7 +174,7 @@ export class InMemoryStorageAdapter implements CausalStorageAdapter {
   }
 
   async purgeCompletedRunsOlderThan(olderThan: Date): Promise<number> {
-    const terminalStatuses = new Set<CausalRunRecord['status']>([
+    const terminalStatuses = new Set<PakisoRunRecord['status']>([
       'COMPLETED',
       'FAILED',
       'CANCELLED',

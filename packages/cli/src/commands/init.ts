@@ -7,7 +7,7 @@ import { detectDialect, schemaPathFor, triggerSqlPathFor } from '../dialect.js';
 const require = createRequire(import.meta.url);
 
 /**
- * Resolves the exact `prisma` CLI binary installed as @causal/cli's own
+ * Resolves the exact `prisma` CLI binary installed as @pakiso/cli's own
  * dependency, rather than shelling out to `npx prisma` — `npx` resolves
  * based on the *caller's* current working directory and can silently fetch
  * an unrelated (and potentially incompatible) version from the registry if
@@ -31,21 +31,21 @@ function run(args: string[]): void {
 }
 
 /**
- * Auto-detects the dialect from CAUSAL_DATABASE_URL, generates the matching
+ * Auto-detects the dialect from PAKISO_DATABASE_URL, generates the matching
  * Prisma client, applies the schema idempotently (`prisma db push`), and —
  * for PostgreSQL only — installs the append-only `prevent_event_mutation`
- * trigger on `causal_events`.
+ * trigger on `pakiso_events`.
  */
 export async function runInit(): Promise<void> {
-  const databaseUrl = process.env.CAUSAL_DATABASE_URL;
+  const databaseUrl = process.env.PAKISO_DATABASE_URL;
   if (!databaseUrl) {
-    throw new Error('CAUSAL_DATABASE_URL must be set before running "causal init".');
+    throw new Error('PAKISO_DATABASE_URL must be set before running "pakiso init".');
   }
 
   const dialect = detectDialect(databaseUrl);
   const schemaPath = schemaPathFor(dialect);
 
-  console.log(`${pc.bold('causal init')} — dialect: ${pc.cyan(dialect)}`);
+  console.log(`${pc.bold('pakiso init')} — dialect: ${pc.cyan(dialect)}`);
 
   console.log(pc.dim('→ generating Prisma client...'));
   run(['generate', `--schema=${schemaPath}`]);
@@ -55,9 +55,9 @@ export async function runInit(): Promise<void> {
 
   const triggerSqlPath = triggerSqlPathFor(dialect);
   if (triggerSqlPath) {
-    console.log(pc.dim('→ installing append-only trigger on causal_events...'));
+    console.log(pc.dim('→ installing append-only trigger on pakiso_events...'));
     run(['db', 'execute', `--schema=${schemaPath}`, `--file=${triggerSqlPath}`]);
   }
 
-  console.log(pc.green('✔ causal init complete'));
+  console.log(pc.green('✔ pakiso init complete'));
 }

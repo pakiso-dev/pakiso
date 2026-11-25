@@ -11,7 +11,7 @@ interface DashboardSsrModule {
  * Renders a page's inner `#app` markup via the frontend's isomorphic React
  * tree (built separately by `vite build --config vite.ssr.config.ts` into
  * `dist/ssr/entry-server.js`). Loaded with a dynamic `import()` of a
- * runtime-computed path — same pattern `@causal/example-api`'s
+ * runtime-computed path — same pattern `@pakiso/example-api`'s
  * `resolveExampleStorage()` uses for its generated Prisma client — so
  * neither tsup nor esbuild try to statically bundle the (React-only) SSR
  * chunk into the backend's own output.

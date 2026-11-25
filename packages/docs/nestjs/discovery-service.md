@@ -2,7 +2,7 @@
 
 `WorkflowExplorer` is the provider that turns `@Workflow()`-decorated
 methods scattered across your Nest providers into registered handlers on
-the `CausalEngine` — you don't normally interact with it directly, but it's
+the `PakisoEngine` — you don't normally interact with it directly, but it's
 worth understanding what it does at bootstrap.
 
 #### What it does
@@ -12,7 +12,7 @@ worth understanding what it does at bootstrap.
 1. Gets every provider Nest's `DiscoveryService` knows about.
 2. Skips providers without an instantiated object/prototype.
 3. Scans each provider's prototype method names with `MetadataScanner`.
-4. Reads the `CAUSAL_WORKFLOW_METADATA` metadata key off each method —
+4. Reads the `PAKISO_WORKFLOW_METADATA` metadata key off each method —
    this is what `@Workflow()` attaches via Nest's `SetMetadata`.
 5. For every method that has it, wraps it as a handler bound to the
    provider instance, and calls:
@@ -41,9 +41,9 @@ by tracking the names you pass to `@Workflow({ name: ... })`) — see
 #### Constants
 
 ```ts
-CAUSAL_WORKFLOW_METADATA // 'causal:workflow' — the SetMetadata key used by @Workflow()
-CAUSAL_ENGINE            // DI token for the InProcessCausalEngine
+PAKISO_WORKFLOW_METADATA // 'pakiso:workflow' — the SetMetadata key used by @Workflow()
+PAKISO_ENGINE            // DI token for the InProcessPakisoEngine
 ```
 
-Both are exported from `@causal/nest` if you need to read workflow metadata
+Both are exported from `@pakiso/nest` if you need to read workflow metadata
 yourself (e.g. to build a custom explorer or admin tool).

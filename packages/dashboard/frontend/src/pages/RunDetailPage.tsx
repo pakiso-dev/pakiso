@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { JournalTable } from '../components/JournalTable.js';
 import { StatusBadge } from '../components/StatusBadge.js';
-import type { CausalEventRecord, CausalRunRecord } from '../types.js';
+import type { PakisoEventRecord, PakisoRunRecord } from '../types.js';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString();
@@ -17,8 +17,8 @@ function MetaField({ label, children }: { label: string; children: ReactNode }) 
 }
 
 export interface RunDetailPageProps {
-  run: CausalRunRecord;
-  events: CausalEventRecord[];
+  run: PakisoRunRecord;
+  events: PakisoEventRecord[];
   /** Omitted during SSR; provided by the client after hydration. */
   onNavigateToList?: () => void;
 }
@@ -27,7 +27,7 @@ export function RunDetailPage({ run, events, onNavigateToList }: RunDetailPagePr
   return (
     <div>
       <a
-        href="/causal-dashboard"
+        href="/pakiso-dashboard"
         onClick={(event) => {
           if (!onNavigateToList) return;
           event.preventDefault();

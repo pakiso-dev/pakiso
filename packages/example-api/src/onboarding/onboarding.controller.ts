@@ -1,10 +1,3 @@
-import type { CausalEngine, CausalStorageAdapter } from '@causal/core';
-import {
-  CAUSAL_ENGINE,
-  CAUSAL_STORAGE_ADAPTER,
-  RedactResponseInterceptor,
-  readIdempotencyKey,
-} from '@causal/nest';
 import {
   Body,
   Controller,
@@ -19,6 +12,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiBody, ApiHeader, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import type { PakisoEngine, PakisoStorageAdapter } from '@pakiso/core';
+import {
+  PAKISO_ENGINE,
+  PAKISO_STORAGE_ADAPTER,
+  RedactResponseInterceptor,
+  readIdempotencyKey,
+} from '@pakiso/nest';
 import { dtoValidationPipe } from '../common/dto-validation.pipe.js';
 import { ComplianceApprovalDto } from './dto/compliance-approval.dto.js';
 import { CreateOnboardingDto } from './dto/create-onboarding.dto.js';
@@ -32,7 +32,7 @@ function correlationKeyFor(email: string): string {
 
 /**
  * REST control plane for the `user-onboarding` workflow. Demonstrates the
- * three ergonomic pieces `@causal/nest` adds on top of the raw `CausalEngine`:
+ * three ergonomic pieces `@pakiso/nest` adds on top of the raw `PakisoEngine`:
  * starting a run idempotently (`Idempotency-Key` header + `correlationKey`),
  * signaling a suspended run's attestation gates by `runId`, and redacting
  * sensitive fields (`RedactResponseInterceptor`) from inspection responses.
@@ -42,8 +42,8 @@ function correlationKeyFor(email: string): string {
 @UseInterceptors(RedactResponseInterceptor)
 export class OnboardingController {
   constructor(
-    @Inject(CAUSAL_ENGINE) private readonly engine: CausalEngine,
-    @Inject(CAUSAL_STORAGE_ADAPTER) private readonly storage: CausalStorageAdapter,
+    @Inject(PAKISO_ENGINE) private readonly engine: PakisoEngine,
+    @Inject(PAKISO_STORAGE_ADAPTER) private readonly storage: PakisoStorageAdapter,
   ) {}
 
   /** Starts a new onboarding run. Returns 202 since the workflow suspends almost immediately. */

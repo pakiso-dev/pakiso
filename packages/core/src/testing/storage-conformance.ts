@@ -1,26 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { ConcurrencyConflictError } from '../errors.js';
-import type { CausalStorageAdapter } from '../storage.js';
+import type { PakisoStorageAdapter } from '../storage.js';
 
 export interface StorageConformanceOptions {
   /** Factory invoked at the start of each test to produce a fresh adapter instance */
-  createAdapter: () => CausalStorageAdapter | Promise<CausalStorageAdapter>;
+  createAdapter: () => PakisoStorageAdapter | Promise<PakisoStorageAdapter>;
 }
 
 /**
- * Reusable Vitest-based conformance suite for any CausalStorageAdapter
+ * Reusable Vitest-based conformance suite for any PakisoStorageAdapter
  * implementation (Prisma, Drizzle, TypeORM, DynamoDB, Redis, ...). Modeled on
  * the Keyv `@keyv/test-suite` pattern: adapter authors call this from their
  * own test file, passing a factory that builds a fresh adapter per test.
  *
- * Exported from the `@causal/core/testing` subpath — not the main entry
- * point — so `@causal/core` itself stays free of a runtime dependency on a
+ * Exported from the `@pakiso/core/testing` subpath — not the main entry
+ * point — so `@pakiso/core` itself stays free of a runtime dependency on a
  * test framework.
  */
 export function runStorageConformanceTests(options: StorageConformanceOptions): void {
   const { createAdapter } = options;
 
-  describe('CausalStorageAdapter conformance', () => {
+  describe('PakisoStorageAdapter conformance', () => {
     it('creates a new run with PENDING status', async () => {
       const storage = await createAdapter();
       const { run, created } = await storage.createOrGetRun({

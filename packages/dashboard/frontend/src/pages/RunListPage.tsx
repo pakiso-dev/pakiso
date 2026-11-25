@@ -1,7 +1,7 @@
 import { StatusBadge } from '../components/StatusBadge.js';
-import type { CausalRunRecord, CausalRunStatus, ListRunsFilter } from '../types.js';
+import type { ListRunsFilter, PakisoRunRecord, PakisoRunStatus } from '../types.js';
 
-const STATUS_FILTER_OPTIONS: Array<CausalRunStatus | ''> = [
+const STATUS_FILTER_OPTIONS: Array<PakisoRunStatus | ''> = [
   '',
   'PENDING',
   'RUNNING',
@@ -30,7 +30,7 @@ const inputClasses =
   'w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-xs placeholder:text-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none sm:w-56';
 
 export interface RunListPageProps {
-  runs: CausalRunRecord[];
+  runs: PakisoRunRecord[];
   nextCursor: string | null;
   filter: ListRunsFilter;
   unsupported?: boolean;
@@ -60,7 +60,7 @@ export function RunListPage({
         </div>
         <form
           className="flex flex-wrap items-end gap-2"
-          action="/causal-dashboard"
+          action="/pakiso-dashboard"
           method="get"
           onSubmit={(event) => {
             if (!onFilterSubmit) return;
@@ -69,7 +69,7 @@ export function RunListPage({
             onFilterSubmit({
               workflowName: String(data.get('workflowName') ?? '') || undefined,
               status: (String(data.get('status') ?? '') || undefined) as
-                | CausalRunStatus
+                | PakisoRunStatus
                 | undefined,
             });
           }}
@@ -104,7 +104,7 @@ export function RunListPage({
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
           The configured storage adapter doesn't implement{' '}
           <code className="font-mono">listRuns()</code>, so run browsing is unavailable. See the
-          @causal/dashboard docs for implementing it on a custom adapter.
+          @pakiso/dashboard docs for implementing it on a custom adapter.
         </div>
       ) : runs.length === 0 ? (
         <div className="rounded-lg border border-dashed border-gray-300 bg-white py-16 text-center">
@@ -135,7 +135,7 @@ export function RunListPage({
                     <td className="px-4 py-3 text-gray-700">{run.workflowName}</td>
                     <td className="px-4 py-3">
                       <a
-                        href={`/causal-dashboard/runs/${run.id}`}
+                        href={`/pakiso-dashboard/runs/${run.id}`}
                         onClick={(event) => {
                           if (!onNavigateToDetail) return;
                           event.preventDefault();
@@ -164,7 +164,7 @@ export function RunListPage({
           {nextCursor !== null && (
             <div className="mt-4 flex justify-end">
               <a
-                href={`/causal-dashboard${buildQuery(filter, { cursor: nextCursor })}`}
+                href={`/pakiso-dashboard${buildQuery(filter, { cursor: nextCursor })}`}
                 onClick={(event) => {
                   if (!onNextPage) return;
                   event.preventDefault();

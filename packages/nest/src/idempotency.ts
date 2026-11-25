@@ -4,7 +4,7 @@ export const IDEMPOTENCY_KEY_HEADER = 'idempotency-key';
 /**
  * Reads the `Idempotency-Key` request header (case-insensitive, as Node/Express/
  * Fastify all normalize incoming header names to lowercase) so a controller can
- * pass it straight through to `CausalEngine.startWorkflow({ idempotencyKey })`.
+ * pass it straight through to `PakisoEngine.startWorkflow({ idempotencyKey })`.
  * Returns the first value if the header was sent multiple times.
  */
 export function readIdempotencyKey(

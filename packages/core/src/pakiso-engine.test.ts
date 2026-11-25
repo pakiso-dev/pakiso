@@ -1,18 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
-import { getCurrentCausalContext } from './causal-context.js';
-import { InProcessCausalEngine } from './causal-engine.js';
-import { CausalDivergenceError } from './errors.js';
+import { PakisoDivergenceError } from './errors.js';
 import { InMemoryStorageAdapter } from './in-memory-storage-adapter.js';
-import type { CausalContext } from './runtime.js';
-import type { CausalStorageAdapter } from './storage.js';
+import { getCurrentPakisoContext } from './pakiso-context.js';
+import { InProcessPakisoEngine } from './pakiso-engine.js';
+import type { PakisoContext } from './runtime.js';
+import type { PakisoStorageAdapter } from './storage.js';
 
 function createEngine() {
   const storage = new InMemoryStorageAdapter();
-  const engine = new InProcessCausalEngine({ storage });
+  const engine = new InProcessPakisoEngine({ storage });
   return { storage, engine };
 }
 
-describe('InProcessCausalEngine', () => {
+describe('InProcessPakisoEngine', () => {
   it('runs a workflow to completion, recording steps with durationMs and output', async () => {
     const { storage, engine } = createEngine();
     const chargeCard = vi.fn(async () => ({ chargeId: 'ch_1' }));
@@ -213,7 +213,7 @@ describe('InProcessCausalEngine', () => {
     });
   });
 
-  it('throws CausalDivergenceError when resumed code calls a different step than recorded', async () => {
+  it('throws PakisoDivergenceError when resumed code calls a different step than recorded', async () => {
     const { storage, engine } = createEngine();
     engine.registerWorkflow('order', async (_input, ctx) => {
       await ctx.awaitAttestation('manager-approval');
@@ -229,26 +229,26 @@ describe('InProcessCausalEngine', () => {
       return {};
     });
 
-    await expect(engine.replayRun(run.id)).rejects.toThrow(CausalDivergenceError);
+    await expect(engine.replayRun(run.id)).rejects.toThrow(PakisoDivergenceError);
     expect((await storage.getRun(run.id))?.status).toBe('WAITING_ATTESTATION');
   });
 
-  it('exposes the active CausalContext via getCurrentCausalContext during step execution', async () => {
+  it('exposes the active PakisoContext via getCurrentPakisoContext during step execution', async () => {
     const { engine } = createEngine();
-    let observed: CausalContext | undefined;
+    let observed: PakisoContext | undefined;
 
     engine.registerWorkflow('wf', async (_input, ctx) => {
       await ctx.step('observe', () => {
-        observed = getCurrentCausalContext();
+        observed = getCurrentPakisoContext();
       });
       return {};
     });
 
-    expect(getCurrentCausalContext()).toBeUndefined();
+    expect(getCurrentPakisoContext()).toBeUndefined();
     await engine.startWorkflow({ workflowName: 'wf', input: {} });
 
     expect(observed?.workflowName).toBe('wf');
-    expect(getCurrentCausalContext()).toBeUndefined();
+    expect(getCurrentPakisoContext()).toBeUndefined();
   });
 
   it('records ctx.now()/ctx.uuid() as steps so replay returns identical values without recomputing', async () => {
@@ -300,7 +300,7 @@ describe('InProcessCausalEngine', () => {
     expect(finished?.output).toEqual({ finance: true, manager: true });
   });
 
-  it('throws CausalDivergenceError replaying a completed run whose code now awaits an extra gate', async () => {
+  it('throws PakisoDivergenceError replaying a completed run whose code now awaits an extra gate', async () => {
     const { engine } = createEngine();
     engine.registerWorkflow('order', async (_input, ctx) => {
       const attestation = await ctx.awaitAttestation<{ ok: boolean }>('manager-approval');
@@ -317,10 +317,10 @@ describe('InProcessCausalEngine', () => {
       return { ok: attestation.ok };
     });
 
-    await expect(engine.replayRun(started.id)).rejects.toThrow(CausalDivergenceError);
+    await expect(engine.replayRun(started.id)).rejects.toThrow(PakisoDivergenceError);
   });
 
-  it('throws CausalDivergenceError replaying a completed run whose code now calls an extra step', async () => {
+  it('throws PakisoDivergenceError replaying a completed run whose code now calls an extra step', async () => {
     const { engine } = createEngine();
     engine.registerWorkflow('wf', async (_input, ctx) => {
       await ctx.step('existing-step', async () => 'a');
@@ -334,10 +334,10 @@ describe('InProcessCausalEngine', () => {
       return {};
     });
 
-    await expect(engine.replayRun(run.id)).rejects.toThrow(CausalDivergenceError);
+    await expect(engine.replayRun(run.id)).rejects.toThrow(PakisoDivergenceError);
   });
 
-  it('throws CausalDivergenceError when the awaited gate name itself no longer matches history', async () => {
+  it('throws PakisoDivergenceError when the awaited gate name itself no longer matches history', async () => {
     const { engine } = createEngine();
     engine.registerWorkflow('order', async (_input, ctx) => {
       await ctx.awaitAttestation('gate-a');
@@ -352,7 +352,7 @@ describe('InProcessCausalEngine', () => {
       return {};
     });
 
-    await expect(engine.replayRun(started.id)).rejects.toThrow(CausalDivergenceError);
+    await expect(engine.replayRun(started.id)).rejects.toThrow(PakisoDivergenceError);
   });
 
   it('throws when starting an unregistered workflow', async () => {
@@ -397,7 +397,7 @@ describe('InProcessCausalEngine', () => {
   });
 });
 
-describe('InProcessCausalEngine lease locking', () => {
+describe('InProcessPakisoEngine lease locking', () => {
   it('releases the lease after a run completes, allowing a later pass to acquire it', async () => {
     const { storage, engine } = createEngine();
     engine.registerWorkflow('wf', async () => ({ ok: true }));
@@ -433,7 +433,7 @@ describe('InProcessCausalEngine lease locking', () => {
 
   it('throws LeaseConflictError when resuming a run whose lease is held by another worker', async () => {
     const storage = new InMemoryStorageAdapter();
-    const engine = new InProcessCausalEngine({ storage, leaseOwner: 'worker-a' });
+    const engine = new InProcessPakisoEngine({ storage, leaseOwner: 'worker-a' });
     engine.registerWorkflow('wf', async (_input, ctx) => {
       await ctx.awaitAttestation('gate');
       return {};
@@ -455,7 +455,7 @@ describe('InProcessCausalEngine lease locking', () => {
   });
 });
 
-describe('InProcessCausalEngine attestation deadlines', () => {
+describe('InProcessPakisoEngine attestation deadlines', () => {
   it('records attestationExpiresAt on the run when a gate has a deadline', async () => {
     const { engine } = createEngine();
     const expiresAt = new Date(Date.now() + 60_000);
@@ -550,7 +550,7 @@ describe('InProcessCausalEngine attestation deadlines', () => {
     // instance can't remove a method defined on the class prototype, so this
     // is the correct way to simulate an adapter that genuinely lacks an
     // optional method.
-    const storage: CausalStorageAdapter = {
+    const storage: PakisoStorageAdapter = {
       createOrGetRun: (params) => inner.createOrGetRun(params),
       getRun: (runId) => inner.getRun(runId),
       getLatestRunByCorrelationKey: (workflowName, correlationKey) =>
@@ -559,14 +559,14 @@ describe('InProcessCausalEngine attestation deadlines', () => {
       appendEvent: (params) => inner.appendEvent(params),
       updateRunStatus: (params) => inner.updateRunStatus(params),
     };
-    const engine = new InProcessCausalEngine({ storage });
+    const engine = new InProcessPakisoEngine({ storage });
 
     expect(await engine.expireOverdueAttestations()).toEqual([]);
   });
 
   it('proceeds without distributed locking when the adapter does not implement acquireLease', async () => {
     const inner = new InMemoryStorageAdapter();
-    const storage: CausalStorageAdapter = {
+    const storage: PakisoStorageAdapter = {
       createOrGetRun: (params) => inner.createOrGetRun(params),
       getRun: (runId) => inner.getRun(runId),
       getLatestRunByCorrelationKey: (workflowName, correlationKey) =>
@@ -575,7 +575,7 @@ describe('InProcessCausalEngine attestation deadlines', () => {
       appendEvent: (params) => inner.appendEvent(params),
       updateRunStatus: (params) => inner.updateRunStatus(params),
     };
-    const engine = new InProcessCausalEngine({ storage });
+    const engine = new InProcessPakisoEngine({ storage });
     engine.registerWorkflow('wf', async () => ({ ok: true }));
 
     const run = await engine.startWorkflow({ workflowName: 'wf', input: {} });

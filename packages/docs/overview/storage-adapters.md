@@ -1,24 +1,24 @@
 # Storage adapters
 
-Causal's core runtime owns execution semantics (what a step is, how a gate
+Pakiso's core runtime owns execution semantics (what a step is, how a gate
 suspends, how replay matches the journal) while delegating all persistence
-to a `CausalStorageAdapter`. This BYOS (bring-your-own-storage) contract is
+to a `PakisoStorageAdapter`. This BYOS (bring-your-own-storage) contract is
 deliberately small so any database — Prisma, Drizzle, TypeORM, DynamoDB,
 Redis, ... — can back a run.
 
-#### What Causal does (and doesn't) store
+#### What Pakiso does (and doesn't) store
 
-A `CausalStorageAdapter`'s tables (`CausalRun`/`CausalEvent`, or whatever
+A `PakisoStorageAdapter`'s tables (`PakisoRun`/`PakisoEvent`, or whatever
 your adapter calls them) are generic and workflow-agnostic:
 `input`/`output`/`payload` are opaque JSON blobs, not typed columns per
-business entity. **This is not your application's data store.** Causal
+business entity. **This is not your application's data store.** Pakiso
 persists only what the engine itself needs to resume and replay a run
 deterministically — it is not where you model or query your business
 entities (users, orders, accounts, ...). Those continue to live in your own
 database tables, typically written as a side effect inside a step. The
 [onboarding recipe](/recipes/onboarding-walkthrough)'s `createAccount` step
 makes this explicit: it's a stand-in for "persisting a new user record in
-your own domain database," not something Causal does for you.
+your own domain database," not something Pakiso does for you.
 
 That said, the journal does carry real business data: whatever you pass as
 workflow `input`/`output`, or return from a step, is stored verbatim in
@@ -30,24 +30,24 @@ are first-class concerns here, rather than an afterthought bolted on later.
 #### The contract
 
 ```ts
-interface CausalStorageAdapter {
+interface PakisoStorageAdapter {
   connect?(): Promise<void>;
   disconnect?(): Promise<void>;
 
-  createOrGetRun(params: CreateRunParams): Promise<{ run: CausalRunRecord; created: boolean }>;
-  getRun(runId: string): Promise<CausalRunRecord | null>;
+  createOrGetRun(params: CreateRunParams): Promise<{ run: PakisoRunRecord; created: boolean }>;
+  getRun(runId: string): Promise<PakisoRunRecord | null>;
   getLatestRunByCorrelationKey(
     workflowName: string,
     correlationKey: string,
-  ): Promise<CausalRunRecord | null>;
-  getEvents(runId: string): Promise<CausalEventRecord[]>;
-  appendEvent(params: AppendEventParams): Promise<CausalEventRecord>;
-  updateRunStatus(params: UpdateRunStatusParams): Promise<CausalRunRecord>;
+  ): Promise<PakisoRunRecord | null>;
+  getEvents(runId: string): Promise<PakisoEventRecord[]>;
+  appendEvent(params: AppendEventParams): Promise<PakisoEventRecord>;
+  updateRunStatus(params: UpdateRunStatusParams): Promise<PakisoRunRecord>;
 
   // Optional — see "Optional capabilities" below.
   acquireLease?(params: AcquireLeaseParams): Promise<boolean>;
   releaseLease?(params: ReleaseLeaseParams): Promise<void>;
-  findExpiredWaitingRuns?(now: Date): Promise<CausalRunRecord[]>;
+  findExpiredWaitingRuns?(now: Date): Promise<PakisoRunRecord[]>;
   purgeCompletedRunsOlderThan?(olderThan: Date): Promise<number>;
   listRuns?(params: ListRunsParams): Promise<ListRunsResult>;
 }
@@ -55,7 +55,7 @@ interface CausalStorageAdapter {
 
 | Method | Responsibility |
 | --- | --- |
-| `connect` / `disconnect` | Optional lifecycle hooks; `@causal/nest`'s `CausalModule` calls these on Nest's module init/destroy. |
+| `connect` / `disconnect` | Optional lifecycle hooks; `@pakiso/nest`'s `PakisoModule` calls these on Nest's module init/destroy. |
 | `createOrGetRun` | Create a `PENDING` run, or — if `idempotencyKey` is set and already used for this workflow — return the existing run with `created: false`. |
 | `getRun` | Fetch a run by ID, or `null`. |
 | `getLatestRunByCorrelationKey` | Fetch the most recent run for a workflow + correlation key, or `null`. |
@@ -66,16 +66,16 @@ interface CausalStorageAdapter {
 #### Run and event shapes
 
 ```ts
-type CausalRunStatus =
+type PakisoRunStatus =
   | 'PENDING' | 'RUNNING' | 'WAITING_ATTESTATION'
   | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 
-interface CausalRunRecord<TInput = Record<string, unknown>, TOutput = Record<string, unknown>> {
+interface PakisoRunRecord<TInput = Record<string, unknown>, TOutput = Record<string, unknown>> {
   id: string;
   workflowName: string;
   correlationKey: string | null;
   idempotencyKey: string | null;
-  status: CausalRunStatus;
+  status: PakisoRunStatus;
   input: TInput;
   output: TOutput | null;
   error: string | null;
@@ -85,16 +85,16 @@ interface CausalRunRecord<TInput = Record<string, unknown>, TOutput = Record<str
   attestationExpiresAt: Date | null;
 }
 
-type CausalEventType =
+type PakisoEventType =
   | 'WORKFLOW_STARTED' | 'STEP_COMPLETED'
   | 'ATTESTATION_REQUESTED' | 'ATTESTATION_RECEIVED'
   | 'WORKFLOW_COMPLETED' | 'WORKFLOW_FAILED' | 'WORKFLOW_CANCELLED';
 
-interface CausalEventRecord<TPayload = Record<string, unknown>> {
+interface PakisoEventRecord<TPayload = Record<string, unknown>> {
   id: string;
   runId: string;
   seq: number;
-  type: CausalEventType;
+  type: PakisoEventType;
   stepName: string | null;
   /** Wall-clock ms for STEP_COMPLETED events; null otherwise */
   durationMs: number | null;
@@ -105,7 +105,7 @@ interface CausalEventRecord<TPayload = Record<string, unknown>> {
 
 #### Relating a run to your business entities
 
-Causal doesn't maintain foreign keys into your own schema, but there are
+Pakiso doesn't maintain foreign keys into your own schema, but there are
 two straightforward ways to associate a run with one of your business
 entities — use either, or both, depending on the lookup direction you need.
 
@@ -146,7 +146,7 @@ journal:
 
 ```ts
 @Workflow({ name: 'user-onboarding' })
-async onboard(input: OnboardUserInput, ctx: CausalContext) {
+async onboard(input: OnboardUserInput, ctx: PakisoContext) {
   const account = await ctx.step('create-account', () =>
     this.usersRepository.save({ email: input.email, onboardingRunId: ctx.runId }),
   );
@@ -155,7 +155,7 @@ async onboard(input: OnboardUserInput, ctx: CausalContext) {
 ```
 
 (Inside a `@Recordable()`-decorated method instead, use
-`getCurrentCausalContext()?.runId` from `@causal/core` — `@Recordable()`
+`getCurrentPakisoContext()?.runId` from `@pakiso/core` — `@Recordable()`
 methods aren't called with `ctx` as a parameter.)
 
 From application code, `storage.getRun(user.onboardingRunId)` and
@@ -186,7 +186,7 @@ track exactly which run applies.
 #### The bundled in-memory adapter
 
 ```ts
-import { InMemoryStorageAdapter } from '@causal/core';
+import { InMemoryStorageAdapter } from '@pakiso/core';
 
 const storage = new InMemoryStorageAdapter();
 ```

@@ -1,25 +1,25 @@
-# Causal engine
+# Pakiso engine
 
-`@causal/core` ships one `CausalEngine` implementation,
-`InProcessCausalEngine`, which executes workflow handlers in-process against
-a `CausalStorageAdapter`. There's no separately-named `CausalEngine` class —
-`CausalEngine` is the interface, `InProcessCausalEngine` is what you
+`@pakiso/core` ships one `PakisoEngine` implementation,
+`InProcessPakisoEngine`, which executes workflow handlers in-process against
+a `PakisoStorageAdapter`. There's no separately-named `PakisoEngine` class —
+`PakisoEngine` is the interface, `InProcessPakisoEngine` is what you
 construct.
 
 #### Construction
 
 ```ts
-import { InProcessCausalEngine } from '@causal/core';
+import { InProcessPakisoEngine } from '@pakiso/core';
 
-interface InProcessCausalEngineOptions {
-  storage: CausalStorageAdapter;
+interface InProcessPakisoEngineOptions {
+  storage: PakisoStorageAdapter;
   /** Identifies this engine instance when acquiring execution leases. Defaults to a random UUID. */
   leaseOwner?: string;
   /** How long an acquired lease is held before another worker may steal it. Defaults to 30s. */
   leaseDurationMs?: number;
 }
 
-const engine = new InProcessCausalEngine({ storage });
+const engine = new InProcessPakisoEngine({ storage });
 ```
 
 `leaseOwner` and `leaseDurationMs` only matter if your storage adapter
@@ -41,7 +41,7 @@ shape `(input, ctx) => Promise<output>`.
 ```ts
 startWorkflow<TInput extends Record<string, unknown>>(
   params: StartWorkflowParams<TInput>,
-): Promise<CausalRunRecord>;
+): Promise<PakisoRunRecord>;
 
 interface StartWorkflowParams<TInput> {
   workflowName: string;
@@ -58,7 +58,7 @@ without re-executing the handler — see [Idempotency](/fundamentals/idempotency
 `correlationKey` lets you later look a run up without its ID (e.g. by email
 address) via `signalByCorrelationKey` or `storage.getLatestRunByCorrelationKey`.
 
-The returned `CausalRunRecord.status` reflects what happened: `'COMPLETED'`
+The returned `PakisoRunRecord.status` reflects what happened: `'COMPLETED'`
 if the handler ran to completion, `'WAITING_ATTESTATION'` if it suspended at
 a gate, or `'FAILED'` if it threw.
 
@@ -98,7 +98,7 @@ only knows a business identifier (e.g. an email address or order ID).
 #### `replayRun(runId, stubs?)`
 
 ```ts
-replayRun(runId: string, stubs?: Record<string, unknown>): Promise<CausalRunRecord>;
+replayRun(runId: string, stubs?: Record<string, unknown>): Promise<PakisoRunRecord>;
 ```
 
 Reruns the registered handler against the run's recorded events **without
@@ -106,13 +106,13 @@ persisting changes or executing recorded step callbacks**. `stubs` lets you
 override specific steps' results by step name, to reproduce a bug
 deterministically. A run still suspended at a gate replays with status
 `'WAITING_ATTESTATION'`. See [Replay](/fundamentals/replay) for the full
-workflow, including the `causal replay` CLI command.
+workflow, including the `pakiso replay` CLI command.
 
 #### Determinism and divergence
 
 If, on resume or replay, the handler executes a different step/gate name
 than what's journaled at that position, the engine throws
-`CausalDivergenceError(runId, seq, expectedStep, actualStep)` — this usually
+`PakisoDivergenceError(runId, seq, expectedStep, actualStep)` — this usually
 means the handler's code changed in a way that's incompatible with runs
 already in flight.
 
@@ -121,8 +121,8 @@ already in flight.
 | Error | Thrown when |
 | --- | --- |
 | `ConcurrencyConflictError(runId, expectedSeq)` | A storage adapter's `appendEvent` rejects because `expectedSeq` doesn't match the latest journal sequence. |
-| `CausalDivergenceError(runId, seq, expectedStep, actualStep)` | Resume/replay executes a different step/gate than what's journaled. |
+| `PakisoDivergenceError(runId, seq, expectedStep, actualStep)` | Resume/replay executes a different step/gate than what's journaled. |
 | `WorkflowSuspendedError(runId, gateName, expiresAt?)` | Internal control-flow signal thrown by `ctx.awaitAttestation()` and caught by the engine — you shouldn't need to catch this yourself. |
 | `LeaseConflictError(runId, leaseOwner)` | The engine couldn't acquire a run's execution lease because another worker holds it. |
 
-All four are exported from `@causal/core`.
+All four are exported from `@pakiso/core`.

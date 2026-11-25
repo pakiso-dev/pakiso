@@ -2,7 +2,7 @@
 
 Workflow run inputs/outputs and event payloads often contain sensitive
 fields (passwords, tokens, dates of birth, ...) that shouldn't be echoed back
-verbatim over HTTP. `@causal/nest` provides a redaction helper and a
+verbatim over HTTP. `@pakiso/nest` provides a redaction helper and a
 ready-made response interceptor for this.
 
 #### `redactSensitiveFields`
@@ -48,10 +48,10 @@ arbitrary depth/shape safely.
 
 A ready-made NestJS interceptor that applies `redactSensitiveFields` to
 every controller response, using the module-level `redactFields` option
-(see [CausalModule](/nestjs/module)) as `extraKeys`:
+(see [PakisoModule](/nestjs/module)) as `extraKeys`:
 
 ```ts
-import { RedactResponseInterceptor } from '@causal/nest';
+import { RedactResponseInterceptor } from '@pakiso/nest';
 
 @UseInterceptors(RedactResponseInterceptor)
 @Controller('onboarding')
@@ -63,15 +63,15 @@ export class OnboardingController {
 }
 ```
 
-The interceptor depends on `CAUSAL_MODULE_OPTIONS` through Nest's DI, so it
-must be used in an app where `CausalModule` is registered. It leaves `null`,
+The interceptor depends on `PAKISO_MODULE_OPTIONS` through Nest's DI, so it
+must be used in an app where `PakisoModule` is registered. It leaves `null`,
 primitives, and arrays untouched at the top level; only non-null,
 non-array response objects are passed through `redactSensitiveFields`.
 
 Configure the extra field names at the module level:
 
 ```ts
-CausalModule.forRoot({
+PakisoModule.forRoot({
   storage: new InMemoryStorageAdapter(),
   redactFields: ['dateOfBirth'],
 });

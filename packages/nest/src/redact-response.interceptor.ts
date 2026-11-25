@@ -2,9 +2,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { CallHandler, ExecutionContext, NestInterceptor } from '@nestjs/common';
 import type { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { CAUSAL_MODULE_OPTIONS } from './constants.js';
+import { PAKISO_MODULE_OPTIONS } from './constants.js';
 import { redactSensitiveFields } from './redaction.js';
-import type { CausalModuleOptions } from './types.js';
+import type { PakisoModuleOptions } from './types.js';
 
 /**
  * Applies `redactSensitiveFields()` to a controller route's JSON response
@@ -15,7 +15,7 @@ import type { CausalModuleOptions } from './types.js';
  */
 @Injectable()
 export class RedactResponseInterceptor implements NestInterceptor {
-  constructor(@Inject(CAUSAL_MODULE_OPTIONS) private readonly moduleOptions: CausalModuleOptions) {}
+  constructor(@Inject(PAKISO_MODULE_OPTIONS) private readonly moduleOptions: PakisoModuleOptions) {}
 
   intercept(_context: ExecutionContext, next: CallHandler): Observable<unknown> {
     return next.handle().pipe(

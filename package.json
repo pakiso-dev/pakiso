@@ -1,7 +1,7 @@
 {
-  "name": "causal",
+  "name": "pakiso",
   "private": true,
-  "description": "Causal — a stateful, deterministic, auditable execution framework for Node.js and NestJS",
+  "description": "Pakiso — a stateful, deterministic, auditable execution framework for Node.js and NestJS",
   "engines": {
     "node": ">=18"
   },
@@ -14,8 +14,8 @@
     "typecheck": "turbo run typecheck",
     "changeset": "changeset",
     "release": "turbo run build && changeset publish",
-    "docs:dev": "pnpm --filter @causal/docs dev",
-    "docs:build": "pnpm --filter @causal/docs build"
+    "docs:dev": "pnpm --filter @pakiso/docs dev",
+    "docs:build": "pnpm --filter @pakiso/docs build"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

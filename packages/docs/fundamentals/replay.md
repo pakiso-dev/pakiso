@@ -19,7 +19,7 @@ call matches against the journal by sequence and step/gate name and returns
 the recorded value — the callback passed to `step()` is **not** invoked. If
 the handler's code now takes a different path than what's journaled (a
 different step name at a given sequence number), replay throws
-`CausalDivergenceError`.
+`PakisoDivergenceError`.
 
 A run still suspended at a gate when it was recorded replays with status
 `'WAITING_ATTESTATION'` — replay doesn't resolve open gates for you.
@@ -37,18 +37,18 @@ reproducing a bug deterministically: force a specific step (e.g. a flaky
 external call) to return a known value, then observe how the rest of the
 handler behaves with your current code.
 
-#### `causal replay` CLI command
+#### `pakiso replay` CLI command
 
-The [`@causal/cli`](/cli/overview) package wraps `replayRun` as a terminal
+The [`@pakiso/cli`](/cli/overview) package wraps `replayRun` as a terminal
 command, loading your project's real engine + registered workflows from a
-`causal.config.mjs` file:
+`pakiso.config.mjs` file:
 
 ```bash
-CAUSAL_DATABASE_URL="file:./dev.db" npx causal replay <runId> \
+PAKISO_DATABASE_URL="file:./dev.db" npx pakiso replay <runId> \
   --stub 'charge-card={"chargeId":"test_123"}'
 ```
 
 `--stub` is repeatable; each one has the form `stepName=jsonValue`
 (`jsonValue` is parsed with `JSON.parse`, falling back to a raw string if
-parsing fails). See [the CLI page](/cli/overview#causal-replay-runid) for
-the full `causal.config.mjs` contract.
+parsing fails). See [the CLI page](/cli/overview#pakiso-replay-runid) for
+the full `pakiso.config.mjs` contract.

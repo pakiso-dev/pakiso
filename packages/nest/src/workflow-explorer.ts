@@ -1,12 +1,12 @@
-import type { CausalEngine, WorkflowHandler } from '@causal/core';
 import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
 import { DiscoveryService, MetadataScanner } from '@nestjs/core';
-import { CAUSAL_ENGINE, CAUSAL_WORKFLOW_METADATA } from './constants.js';
+import type { PakisoEngine, WorkflowHandler } from '@pakiso/core';
+import { PAKISO_ENGINE, PAKISO_WORKFLOW_METADATA } from './constants.js';
 import type { WorkflowDecoratorOptions } from './types.js';
 
 /**
  * Scans every provider at bootstrap for `@Workflow()`-decorated methods and
- * registers each one with the `CausalEngine` under its declared name.
+ * registers each one with the `PakisoEngine` under its declared name.
  */
 @Injectable()
 export class WorkflowExplorer implements OnModuleInit {
@@ -16,7 +16,7 @@ export class WorkflowExplorer implements OnModuleInit {
   constructor(
     @Inject(DiscoveryService) private readonly discoveryService: DiscoveryService,
     @Inject(MetadataScanner) private readonly metadataScanner: MetadataScanner,
-    @Inject(CAUSAL_ENGINE) private readonly engine: CausalEngine,
+    @Inject(PAKISO_ENGINE) private readonly engine: PakisoEngine,
   ) {}
 
   onModuleInit(): void {
@@ -37,7 +37,7 @@ export class WorkflowExplorer implements OnModuleInit {
           continue;
         }
 
-        const options = Reflect.getMetadata(CAUSAL_WORKFLOW_METADATA, method) as
+        const options = Reflect.getMetadata(PAKISO_WORKFLOW_METADATA, method) as
           | WorkflowDecoratorOptions
           | undefined;
         if (!options) {

@@ -4,9 +4,9 @@
  * why) — every other frontend module imports from this local file instead.
  */
 export type {
-  CausalRunStatus,
-  WireCausalRunRecord as CausalRunRecord,
-  WireCausalEventRecord as CausalEventRecord,
+  PakisoRunStatus,
+  WirePakisoRunRecord as PakisoRunRecord,
+  WirePakisoEventRecord as PakisoEventRecord,
   ListRunsFilter,
   PageData,
 } from '../../src/wire-types.js';

@@ -7,10 +7,10 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
   const config = new DocumentBuilder()
-    .setTitle('Causal Example API')
+    .setTitle('Pakiso Example API')
     .setDescription(
       'Interactive docs for the user-onboarding workflow demonstrating ' +
-        '@causal/nest: durable steps, attestation gates (email verification, ' +
+        '@pakiso/nest: durable steps, attestation gates (email verification, ' +
         'compliance approval), and the REST control plane for starting runs ' +
         'and signaling suspended gates.',
     )
@@ -22,7 +22,7 @@ async function bootstrap(): Promise<void> {
 
   const port = Number(process.env.PORT ?? 3000);
   await app.listen(port);
-  console.log(`Causal onboarding example API listening on http://localhost:${port}`);
+  console.log(`Pakiso onboarding example API listening on http://localhost:${port}`);
   console.log(`Swagger UI available at http://localhost:${port}/docs`);
 }
 

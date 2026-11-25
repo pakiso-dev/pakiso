@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import type { CausalEventRecord } from '../types.js';
+import type { PakisoEventRecord } from '../types.js';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString();
@@ -25,7 +25,7 @@ function EventTypeBadge({ type }: { type: string }) {
   );
 }
 
-export function JournalTable({ events }: { events: CausalEventRecord[] }) {
+export function JournalTable({ events }: { events: PakisoEventRecord[] }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   return (

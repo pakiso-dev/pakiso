@@ -47,7 +47,7 @@ export function DashboardApp({ initialPage }: { initialPage: PageData }) {
       try {
         const nextPage = await fetchDetailPage(runId);
         setPage(nextPage);
-        window.history.pushState(null, '', `/causal-dashboard/runs/${runId}`);
+        window.history.pushState(null, '', `/pakiso-dashboard/runs/${runId}`);
       } finally {
         setIsNavigating(false);
       }
@@ -106,7 +106,7 @@ function buildListUrl(filter: ListRunsFilter, cursor?: string): string {
   if (filter.status) params.set('status', filter.status);
   if (cursor) params.set('cursor', cursor);
   const query = params.toString();
-  return `/causal-dashboard${query ? `?${query}` : ''}`;
+  return `/pakiso-dashboard${query ? `?${query}` : ''}`;
 }
 
 async function loadFromLocation(
@@ -115,7 +115,7 @@ async function loadFromLocation(
 ): Promise<void> {
   setIsNavigating(true);
   try {
-    const runMatch = window.location.pathname.match(/\/causal-dashboard\/runs\/(.+)$/);
+    const runMatch = window.location.pathname.match(/\/pakiso-dashboard\/runs\/(.+)$/);
     if (runMatch?.[1]) {
       setPage(await fetchDetailPage(decodeURIComponent(runMatch[1])));
       return;

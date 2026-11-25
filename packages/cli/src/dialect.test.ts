@@ -20,13 +20,13 @@ describe('detectDialect', () => {
 
   it('throws for an unrecognized connection string', () => {
     expect(() => detectDialect('mongodb://host/db')).toThrow(
-      'Cannot detect a Causal dialect from CAUSAL_DATABASE_URL "mongodb://host/db"',
+      'Cannot detect a Pakiso dialect from PAKISO_DATABASE_URL "mongodb://host/db"',
     );
   });
 });
 
 describe('path resolution helpers', () => {
-  it('resolves the installed @causal/storage-prisma package directory', () => {
+  it('resolves the installed @pakiso/storage-prisma package directory', () => {
     expect(storagePrismaDir()).toMatch(/storage-prisma$/);
   });
 

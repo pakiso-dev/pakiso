@@ -1,16 +1,16 @@
 import 'reflect-metadata';
-import { CausalDashboardModule } from '@causal/dashboard';
-import { CausalModule } from '@causal/nest';
 import { Module } from '@nestjs/common';
+import { PakisoDashboardModule } from '@pakiso/dashboard';
+import { PakisoModule } from '@pakiso/nest';
 import { OnboardingModule } from './onboarding/onboarding.module.js';
 import { resolveExampleStorage } from './storage.js';
 
 @Module({
   imports: [
     // Defaults to the zero-config InMemoryStorageAdapter; set
-    // CAUSAL_DATABASE_URL to persist runs via @causal/storage-prisma/SQLite
+    // PAKISO_DATABASE_URL to persist runs via @pakiso/storage-prisma/SQLite
     // instead (see src/storage.ts and README.md).
-    CausalModule.forRootAsync({
+    PakisoModule.forRootAsync({
       useFactory: async () => ({
         storage: await resolveExampleStorage(),
         // `dateOfBirth` is masked by `RedactResponseInterceptor` on top of the
@@ -19,9 +19,9 @@ import { resolveExampleStorage } from './storage.js';
       }),
     }),
     OnboardingModule,
-    // Browse runs and their full event journals at /causal-dashboard — see
-    // @causal/dashboard's README for the production auth/scope caveats.
-    CausalDashboardModule,
+    // Browse runs and their full event journals at /pakiso-dashboard — see
+    // @pakiso/dashboard's README for the production auth/scope caveats.
+    PakisoDashboardModule,
   ],
 })
 export class AppModule {}

@@ -1,5 +1,5 @@
-import type { CausalStorageAdapter } from '@causal/core';
-import { InMemoryStorageAdapter } from '@causal/core';
+import type { PakisoStorageAdapter } from '@pakiso/core';
+import { InMemoryStorageAdapter } from '@pakiso/core';
 import { describe, expect, it } from 'vitest';
 import { DashboardPagesController } from './dashboard-pages.controller.js';
 
@@ -17,7 +17,7 @@ describe('DashboardPagesController', () => {
     expect(html).toContain(run.id);
     expect(html).toContain('wf');
     // The initial page data is embedded for hydration, not re-fetched client-side.
-    expect(html).toContain('__CAUSAL_DASHBOARD_DATA__');
+    expect(html).toContain('__PAKISO_DASHBOARD_DATA__');
     expect(html).toContain('"type":"list"');
   });
 
@@ -34,7 +34,7 @@ describe('DashboardPagesController', () => {
   });
 
   it('renders an in-page message (not a thrown error) when listRuns is unsupported', async () => {
-    const storageWithoutListRuns: CausalStorageAdapter = {
+    const storageWithoutListRuns: PakisoStorageAdapter = {
       async createOrGetRun() {
         throw new Error('not used in this test');
       },

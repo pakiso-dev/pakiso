@@ -7,7 +7,7 @@ import { ValidationPipe } from '@nestjs/common';
  * `design:paramtypes` it attaches to decorated methods). This repo's build
  * tooling — `tsup`/esbuild for builds, and Vitest's default esbuild
  * transform for tests — deliberately doesn't emit that metadata; see
- * `@causal/nest`'s `WorkflowExplorer`, which works around the very same gap
+ * `@pakiso/nest`'s `WorkflowExplorer`, which works around the very same gap
  * with explicit `@Inject()` instead of constructor-type reflection.
  *
  * `ValidationPipe`'s `expectedType` option is the equivalent workaround here:

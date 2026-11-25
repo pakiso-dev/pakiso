@@ -19,7 +19,7 @@ export function Layout({
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center gap-2 px-6 py-4">
           <a
-            href="/causal-dashboard"
+            href="/pakiso-dashboard"
             onClick={(event) => {
               if (!onNavigateHome) return;
               event.preventDefault();
@@ -28,7 +28,7 @@ export function Layout({
             className="flex items-center gap-2 text-lg font-semibold text-gray-900 hover:text-indigo-600"
           >
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-indigo-600" />
-            Causal Dashboard
+            Pakiso Dashboard
           </a>
         </div>
       </header>

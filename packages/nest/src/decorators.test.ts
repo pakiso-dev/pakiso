@@ -1,11 +1,11 @@
 import 'reflect-metadata';
-import { InMemoryStorageAdapter, InProcessCausalEngine } from '@causal/core';
+import { InMemoryStorageAdapter, InProcessPakisoEngine } from '@pakiso/core';
 import { describe, expect, it, vi } from 'vitest';
-import { CAUSAL_WORKFLOW_METADATA } from './constants.js';
+import { PAKISO_WORKFLOW_METADATA } from './constants.js';
 import { Recordable, Workflow } from './decorators.js';
 
 describe('Workflow()', () => {
-  it('stamps CAUSAL_WORKFLOW_METADATA onto the decorated method', () => {
+  it('stamps PAKISO_WORKFLOW_METADATA onto the decorated method', () => {
     class Service {
       @Workflow({ name: 'wf-name', redactFields: ['ssn'] })
       run() {
@@ -13,13 +13,13 @@ describe('Workflow()', () => {
       }
     }
 
-    const metadata = Reflect.getMetadata(CAUSAL_WORKFLOW_METADATA, Service.prototype.run);
+    const metadata = Reflect.getMetadata(PAKISO_WORKFLOW_METADATA, Service.prototype.run);
     expect(metadata).toEqual({ name: 'wf-name', redactFields: ['ssn'] });
   });
 });
 
 describe('Recordable()', () => {
-  it('calls the method directly when no CausalContext is active', async () => {
+  it('calls the method directly when no PakisoContext is active', async () => {
     const sideEffect = vi.fn(async () => 'direct');
 
     class Service {
@@ -47,7 +47,7 @@ describe('Recordable()', () => {
 
     const service = new Service();
     const storage = new InMemoryStorageAdapter();
-    const engine = new InProcessCausalEngine({ storage });
+    const engine = new InProcessPakisoEngine({ storage });
     engine.registerWorkflow('wf', async () => {
       const result = await service.chargeCard();
       return { result };

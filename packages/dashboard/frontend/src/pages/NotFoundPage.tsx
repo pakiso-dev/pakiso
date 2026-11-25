@@ -9,7 +9,7 @@ export function NotFoundPage({ runId, onNavigateToList }: NotFoundPageProps) {
       <p className="text-sm font-medium text-gray-900">No run found</p>
       <p className="mt-1 font-mono text-sm text-gray-500">{runId}</p>
       <a
-        href="/causal-dashboard"
+        href="/pakiso-dashboard"
         onClick={(event) => {
           if (!onNavigateToList) return;
           event.preventDefault();

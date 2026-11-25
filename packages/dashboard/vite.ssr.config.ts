@@ -8,7 +8,7 @@ import { defineConfig } from 'vite';
  * runtime by the backend's ssr-renderer.ts via a dynamic `import()`. Setting
  * `build.ssr` makes Vite externalize node_modules dependencies (react,
  * react-dom/server) instead of bundling them — they're resolved normally
- * from @causal/dashboard's own node_modules at runtime, same as any other
+ * from @pakiso/dashboard's own node_modules at runtime, same as any other
  * backend dependency.
  */
 export default defineConfig({

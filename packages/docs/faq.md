@@ -1,26 +1,26 @@
 # Frequently asked questions
 
-#### Is `@causal/core` really zero-dependency?
+#### Is `@pakiso/core` really zero-dependency?
 
 Almost — its `package.json` lists `@opentelemetry/api` as a runtime
 dependency, used for workflow/step tracing spans. There are no database
 drivers or framework dependencies; persistence is entirely delegated to
-whatever `CausalStorageAdapter` you provide.
+whatever `PakisoStorageAdapter` you provide.
 
-#### Does Causal make arbitrary code deterministic?
+#### Does Pakiso make arbitrary code deterministic?
 
 No. `ctx.step()` and `ctx.awaitAttestation()` make the *values* they return
 deterministic across resume/replay by journaling them — code outside of
 `step()`/`awaitAttestation()` is not made deterministic automatically. Use
 `ctx.now()` and `ctx.uuid()` instead of `new Date()`/`crypto.randomUUID()`
 directly when a value must stay identical across replay (see
-[Causal context](/overview/causal-context)).
+[Pakiso context](/overview/pakiso-context)).
 
 #### What happens if my workflow code changes while runs are in flight?
 
 If a resumed or replayed run executes a different step/gate name than
 what's already journaled at that sequence position, the engine throws
-`CausalDivergenceError`. Avoid removing or reordering steps/gates ahead of
+`PakisoDivergenceError`. Avoid removing or reordering steps/gates ahead of
 code that existing in-flight runs still depend on; adding new steps
 **after** the last journaled position for a given run is safe.
 
@@ -39,14 +39,14 @@ Add the old key to `Aes256GcmPayloadCodec`'s `previousKeys` while
 them, while payloads still encrypted under the previous key continue
 decoding correctly. See [Encryption](/fundamentals/encryption).
 
-#### Does `@causal/nest` give me REST endpoints for free?
+#### Does `@pakiso/nest` give me REST endpoints for free?
 
-No — it discovers `@Workflow()` methods and provides `CAUSAL_ENGINE`/
-`CAUSAL_STORAGE_ADAPTER` for DI, plus small helpers (idempotency header
+No — it discovers `@Workflow()` methods and provides `PAKISO_ENGINE`/
+`PAKISO_STORAGE_ADAPTER` for DI, plus small helpers (idempotency header
 reading, response redaction). You build the controllers. See
 [REST control plane](/nestjs/rest-control-plane) and the
 [onboarding recipe](/recipes/onboarding-walkthrough) for the pattern.
 
 #### Where do I report bugs or ask questions?
 
-Open an issue on [GitHub](https://github.com/causal-dev/causal).
+Open an issue on [GitHub](https://github.com/pakiso-dev/pakiso).

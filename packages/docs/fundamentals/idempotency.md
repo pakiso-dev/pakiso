@@ -1,7 +1,7 @@
 # Idempotency
 
-Causal handles idempotent workflow starts at the engine level, and
-`@causal/nest` adds a small helper for the common HTTP case of reading an
+Pakiso handles idempotent workflow starts at the engine level, and
+`@pakiso/nest` adds a small helper for the common HTTP case of reading an
 `Idempotency-Key` request header.
 
 #### At the engine level: `idempotencyKey`
@@ -14,7 +14,7 @@ const run = await engine.startWorkflow({
 });
 ```
 
-`CausalStorageAdapter.createOrGetRun` deduplicates by the
+`PakisoStorageAdapter.createOrGetRun` deduplicates by the
 `(workflowName, idempotencyKey)` pair: if a run already exists for that
 pair, it is returned as-is (with `created: false` internally), and its
 handler is **not** re-executed. This is what makes it safe to retry a
@@ -24,7 +24,7 @@ workflow.
 #### Reading the header in a NestJS controller
 
 ```ts
-import { IDEMPOTENCY_KEY_HEADER, readIdempotencyKey } from '@causal/nest';
+import { IDEMPOTENCY_KEY_HEADER, readIdempotencyKey } from '@pakiso/nest';
 
 const IDEMPOTENCY_KEY_HEADER = 'idempotency-key';
 

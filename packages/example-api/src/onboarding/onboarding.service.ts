@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import type { CausalContext } from '@causal/core';
-import { Recordable, Workflow } from '@causal/nest';
 import { Injectable } from '@nestjs/common';
+import type { PakisoContext } from '@pakiso/core';
+import { Recordable, Workflow } from '@pakiso/nest';
 
 /** Risk scores at or above this threshold require a human compliance sign-off. */
 const HIGH_RISK_SCORE_THRESHOLD = 70;
@@ -45,7 +45,7 @@ export interface ComplianceApprovalSignal {
 @Injectable()
 export class OnboardingService {
   @Workflow({ name: 'user-onboarding' })
-  async onboard(input: OnboardUserInput, ctx: CausalContext): Promise<OnboardUserOutput> {
+  async onboard(input: OnboardUserInput, ctx: PakisoContext): Promise<OnboardUserOutput> {
     const account = await this.createAccount(input);
 
     await this.sendVerificationEmail({ userId: account.userId, email: account.email });

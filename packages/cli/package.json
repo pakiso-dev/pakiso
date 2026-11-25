@@ -1,10 +1,10 @@
 {
-  "name": "@causal/cli",
+  "name": "@pakiso/cli",
   "version": "0.1.0",
-  "description": "Developer CLI for Causal — schema bootstrapping (causal init) and local trace replay (causal replay/inspect).",
+  "description": "Developer CLI for Pakiso — schema bootstrapping (pakiso init) and local trace replay (pakiso replay/inspect).",
   "type": "module",
   "bin": {
-    "causal": "./dist/cli.js"
+    "pakiso": "./dist/cli.js"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -28,8 +28,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@causal/core": "workspace:*",
-    "@causal/storage-prisma": "workspace:*",
+    "@pakiso/core": "workspace:*",
+    "@pakiso/storage-prisma": "workspace:*",
     "@clack/prompts": "^0.9.0",
     "cli-table3": "^0.6.5",
     "commander": "^12.1.0",

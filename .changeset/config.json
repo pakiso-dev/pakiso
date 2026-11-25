@@ -2,10 +2,24 @@
   "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [],
+  "fixed": [
+    [
+      "@pakiso/cli",
+      "@pakiso/core",
+      "@pakiso/dashboard",
+      "@pakiso/docs",
+      "@pakiso/example-api",
+      "@pakiso/nest",
+      "@pakiso/storage-prisma"
+    ]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": []
+  "ignore": [],
+  "privatePackages": {
+    "version": true,
+    "tag": false
+  }
 }

@@ -3,23 +3,23 @@
  * the default `pnpm test` — requires a live MySQL instance.
  *
  * Usage:
- *   CAUSAL_DATABASE_URL="mysql://user:pass@host:3306/db" pnpm test:mysql
+ *   PAKISO_DATABASE_URL="mysql://user:pass@host:3306/db" pnpm test:mysql
  */
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ConcurrencyConflictError } from '@causal/core';
-import { runStorageConformanceTests } from '@causal/core/testing';
+import { ConcurrencyConflictError } from '@pakiso/core';
+import { runStorageConformanceTests } from '@pakiso/core/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 // @ts-expect-error -- generated on demand by `pnpm generate:mysql`; not present until then.
 import { PrismaClient } from '../generated/mysql/index.js';
 import { PrismaStorageAdapter } from './prisma-storage-adapter.js';
 
 const packageRoot = fileURLToPath(new URL('..', import.meta.url));
-const databaseUrl = process.env.CAUSAL_DATABASE_URL;
+const databaseUrl = process.env.PAKISO_DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error(
-    'CAUSAL_DATABASE_URL must point at a live MySQL instance to run this suite (see file header).',
+    'PAKISO_DATABASE_URL must point at a live MySQL instance to run this suite (see file header).',
   );
 }
 
@@ -29,7 +29,7 @@ beforeAll(() => {
   execFileSync(
     'npx',
     ['prisma', 'db', 'push', '--schema=prisma/mysql.prisma', '--skip-generate', '--force-reset'],
-    { cwd: packageRoot, env: { ...process.env, CAUSAL_DATABASE_URL: databaseUrl }, stdio: 'pipe' },
+    { cwd: packageRoot, env: { ...process.env, PAKISO_DATABASE_URL: databaseUrl }, stdio: 'pipe' },
   );
   prisma = new PrismaClient({ datasourceUrl: databaseUrl });
 }, 30_000);
@@ -39,8 +39,8 @@ afterAll(async () => {
 });
 
 async function freshAdapter(): Promise<PrismaStorageAdapter> {
-  await prisma.causalEvent.deleteMany();
-  await prisma.causalRun.deleteMany();
+  await prisma.pakisoEvent.deleteMany();
+  await prisma.pakisoRun.deleteMany();
   return new PrismaStorageAdapter(prisma);
 }
 

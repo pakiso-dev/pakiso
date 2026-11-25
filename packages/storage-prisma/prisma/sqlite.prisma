@@ -1,4 +1,4 @@
-// Causal storage schema — SQLite dialect.
+// Pakiso storage schema — SQLite dialect.
 // Kept byte-for-byte identical in model shape to postgresql.prisma and
 // mysql.prisma (only `datasource`/`generator` differ) so the generated
 // TypeScript client types — and therefore PrismaStorageAdapter — are
@@ -11,10 +11,10 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("CAUSAL_DATABASE_URL")
+  url      = env("PAKISO_DATABASE_URL")
 }
 
-model CausalRun {
+model PakisoRun {
   id             String   @id @default(uuid(7))
   workflowName   String
   correlationKey String?
@@ -33,15 +33,15 @@ model CausalRun {
   /// auto-escalation). Null unless status is WAITING_ATTESTATION with a deadline.
   attestationExpiresAt DateTime?
 
-  events CausalEvent[]
+  events PakisoEvent[]
 
   @@unique([workflowName, idempotencyKey])
   @@index([workflowName, correlationKey])
   @@index([status, attestationExpiresAt])
-  @@map("causal_runs")
+  @@map("pakiso_runs")
 }
 
-model CausalEvent {
+model PakisoEvent {
   id         String   @id @default(uuid())
   runId      String
   seq        Int
@@ -51,8 +51,8 @@ model CausalEvent {
   payload    Json
   createdAt  DateTime @default(now())
 
-  run CausalRun @relation(fields: [runId], references: [id])
+  run PakisoRun @relation(fields: [runId], references: [id])
 
   @@unique([runId, seq])
-  @@map("causal_events")
+  @@map("pakiso_events")
 }

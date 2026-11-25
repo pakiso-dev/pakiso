@@ -1,7 +1,7 @@
 # Recipe: durable user-onboarding workflow
 
-`@causal/example-api` is a complete, runnable NestJS app demonstrating
-Causal end to end: a `user-onboarding` workflow that creates an account,
+`@pakiso/example-api` is a complete, runnable NestJS app demonstrating
+Pakiso end to end: a `user-onboarding` workflow that creates an account,
 requires email verification, runs an (automated) compliance/KYC check, and
 — only for applicants flagged as high-risk — suspends for a human
 compliance officer's sign-off before activating the account.
@@ -12,7 +12,7 @@ compliance officer's sign-off before activating the account.
 @Injectable()
 export class OnboardingService {
   @Workflow({ name: 'user-onboarding' })
-  async onboard(input: OnboardUserInput, ctx: CausalContext): Promise<OnboardUserOutput> {
+  async onboard(input: OnboardUserInput, ctx: PakisoContext): Promise<OnboardUserOutput> {
     const account = await this.createAccount(input);
 
     await this.sendVerificationEmail({ userId: account.userId, email: account.email });
@@ -59,7 +59,7 @@ until the matching signal arrives.
 
 All routes are under `@Controller('onboarding')`, with
 `RedactResponseInterceptor` applied at the controller level (masking
-`dateOfBirth`, configured via `CausalModule.forRootAsync`'s `redactFields`).
+`dateOfBirth`, configured via `PakisoModule.forRootAsync`'s `redactFields`).
 
 | Method & path | Body | Effect |
 | --- | --- | --- |
@@ -87,13 +87,13 @@ rather than silently dropped.
 
 `resolveExampleStorage()` picks the adapter at startup:
 
-- No `CAUSAL_DATABASE_URL` → `InMemoryStorageAdapter` (state lost on
+- No `PAKISO_DATABASE_URL` → `InMemoryStorageAdapter` (state lost on
   restart) — the zero-config default.
-- `CAUSAL_DATABASE_URL` set → dynamically loads the generated local Prisma
+- `PAKISO_DATABASE_URL` set → dynamically loads the generated local Prisma
   SQLite client and returns `new PrismaStorageAdapter(prisma)`.
 
 ```bash
-pnpm --filter @causal/example-api generate:sqlite
+pnpm --filter @pakiso/example-api generate:sqlite
 ```
 
 generates that client from `prisma/schema.prisma`.
@@ -101,7 +101,7 @@ generates that client from `prisma/schema.prisma`.
 #### Running it
 
 ```bash
-pnpm --filter @causal/example-api dev
+pnpm --filter @pakiso/example-api dev
 ```
 
 Listens on `http://localhost:3000` (override with `PORT`). Interactive

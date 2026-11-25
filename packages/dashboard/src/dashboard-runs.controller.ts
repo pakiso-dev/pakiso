@@ -1,5 +1,3 @@
-import type { CausalRunStatus, CausalStorageAdapter, ListRunsResult } from '@causal/core';
-import { CAUSAL_STORAGE_ADAPTER } from '@causal/nest';
 import {
   Controller,
   Get,
@@ -9,31 +7,33 @@ import {
   Param,
   Query,
 } from '@nestjs/common';
+import type { ListRunsResult, PakisoRunStatus, PakisoStorageAdapter } from '@pakiso/core';
+import { PAKISO_STORAGE_ADAPTER } from '@pakiso/nest';
 import { DASHBOARD_MOUNT_PATH } from './constants.js';
 
 interface ListRunsQuery {
   workflowName?: string;
-  status?: CausalRunStatus;
+  status?: PakisoRunStatus;
   cursor?: string;
   limit?: string;
 }
 
 /**
  * Read-only JSON API backing the dashboard's run list/journal views. Reuses
- * the host app's own `CAUSAL_STORAGE_ADAPTER` provider (from `CausalModule`)
+ * the host app's own `PAKISO_STORAGE_ADAPTER` provider (from `PakisoModule`)
  * rather than opening a second connection, so it reflects exactly the same
  * data the live app's engine is operating on.
  */
 @Controller(`${DASHBOARD_MOUNT_PATH}/api/runs`)
 export class DashboardRunsController {
-  constructor(@Inject(CAUSAL_STORAGE_ADAPTER) private readonly storage: CausalStorageAdapter) {}
+  constructor(@Inject(PAKISO_STORAGE_ADAPTER) private readonly storage: PakisoStorageAdapter) {}
 
   @Get()
   async list(@Query() query: ListRunsQuery): Promise<ListRunsResult> {
     if (!this.storage.listRuns) {
       throw new NotImplementedException(
-        'The configured CausalStorageAdapter does not implement listRuns() — run browsing is unavailable. ' +
-          'See the @causal/dashboard docs for implementing it on a custom adapter.',
+        'The configured PakisoStorageAdapter does not implement listRuns() — run browsing is unavailable. ' +
+          'See the @pakiso/dashboard docs for implementing it on a custom adapter.',
       );
     }
 

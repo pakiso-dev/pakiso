@@ -1,4 +1,4 @@
-import type { RedactionOptions } from '@causal/core';
+import type { RedactionOptions } from '@pakiso/core';
 
 const REDACTED_VALUE = '[REDACTED]';
 const CIRCULAR_VALUE = '[CIRCULAR]';

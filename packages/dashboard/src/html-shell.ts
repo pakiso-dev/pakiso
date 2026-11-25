@@ -17,12 +17,12 @@ export function renderHtmlShell(innerHtml: string, page: PageData): string {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Causal Dashboard</title>
+    <title>Pakiso Dashboard</title>
     <link rel="stylesheet" href="/${DASHBOARD_MOUNT_PATH}/assets/main.css" />
   </head>
   <body>
     <div id="app">${innerHtml}</div>
-    <script id="__CAUSAL_DASHBOARD_DATA__" type="application/json">${embeddedJson}</script>
+    <script id="__PAKISO_DASHBOARD_DATA__" type="application/json">${embeddedJson}</script>
     <script type="module" src="/${DASHBOARD_MOUNT_PATH}/assets/main.js"></script>
   </body>
 </html>

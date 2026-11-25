@@ -1,25 +1,25 @@
 # First steps
 
-This walks through the smallest possible Causal program using
-`@causal/core` directly, with no framework. If you're using NestJS, read
-this first for the underlying concepts, then see [CausalModule](/nestjs/module).
+This walks through the smallest possible Pakiso program using
+`@pakiso/core` directly, with no framework. If you're using NestJS, read
+this first for the underlying concepts, then see [PakisoModule](/nestjs/module).
 
 #### Install
 
 ```bash
-pnpm add @causal/core
+pnpm add @pakiso/core
 ```
 
 #### Register a workflow and run it
 
 A workflow is just an `async` function: `(input, ctx) => Promise<output>`.
-You register it under a name with a `CausalEngine`, backed by a
-`CausalStorageAdapter`:
+You register it under a name with a `PakisoEngine`, backed by a
+`PakisoStorageAdapter`:
 
 ```ts
-import { InProcessCausalEngine, InMemoryStorageAdapter } from '@causal/core';
+import { InProcessPakisoEngine, InMemoryStorageAdapter } from '@pakiso/core';
 
-const engine = new InProcessCausalEngine({
+const engine = new InProcessPakisoEngine({
   storage: new InMemoryStorageAdapter(),
 });
 
@@ -79,7 +79,7 @@ including deadlines and correlation-key based signaling.
 
 #### Next steps
 
-- [Causal engine](/overview/causal-engine) — every `CausalEngine` method in detail.
-- [Causal context](/overview/causal-context) — everything `ctx` exposes inside a handler.
+- [Pakiso engine](/overview/pakiso-engine) — every `PakisoEngine` method in detail.
+- [Pakiso context](/overview/pakiso-context) — everything `ctx` exposes inside a handler.
 - [Storage adapters](/overview/storage-adapters) — the BYOS contract and the bundled in-memory adapter.
 - [Replay](/fundamentals/replay) — reproducing a recorded run locally.

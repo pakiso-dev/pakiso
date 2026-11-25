@@ -1,9 +1,9 @@
 # Attestation gates
 
-An **attestation gate** is Causal's mechanism for durably suspending a run
+An **attestation gate** is Pakiso's mechanism for durably suspending a run
 until a human or a policy engine makes a decision — "wait for the user to
 click the email verification link," "wait for a compliance officer to
-approve this application." It is the core primitive behind Causal's
+approve this application." It is the core primitive behind Pakiso's
 human/policy sign-off story.
 
 #### How a gate works
@@ -12,7 +12,7 @@ human/policy sign-off story.
 const approval = await ctx.awaitAttestation<{ approved: boolean }>('manager-approval');
 ```
 
-1. The first time the handler reaches this line, Causal records an
+1. The first time the handler reaches this line, Pakiso records an
    `ATTESTATION_REQUESTED` event under the gate name and throws an internal
    `WorkflowSuspendedError` — this is caught by the engine, not by your code.
 2. The engine catches it, updates the run's status to `WAITING_ATTESTATION`,
@@ -93,7 +93,7 @@ already holds a lease on), records a failure event, and marks the run
 for audit purposes but is not otherwise interpreted by the engine.
 
 ::: tip
-Causal provides the suspend/resume mechanism — not a human-approval UI or an
+Pakiso provides the suspend/resume mechanism — not a human-approval UI or an
 authorization layer. Who is allowed to call `signalByRunId` for a given gate
 is your application's concern (see the
 [REST control plane](/nestjs/rest-control-plane) page for one way to expose

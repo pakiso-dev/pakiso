@@ -2,22 +2,22 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { loadCausalEngineConfig } from './config-loader.js';
+import { loadPakisoEngineConfig } from './config-loader.js';
 
 let dir: string;
 
 beforeEach(async () => {
-  dir = await mkdtemp(join(tmpdir(), 'causal-config-test-'));
+  dir = await mkdtemp(join(tmpdir(), 'pakiso-config-test-'));
 });
 
 afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
-describe('loadCausalEngineConfig', () => {
-  it('loads a default-exported CausalEngine instance', async () => {
+describe('loadPakisoEngineConfig', () => {
+  it('loads a default-exported PakisoEngine instance', async () => {
     await writeFile(
-      join(dir, 'causal.config.mjs'),
+      join(dir, 'pakiso.config.mjs'),
       `export default {
         registerWorkflow() {},
         startWorkflow() {},
@@ -27,13 +27,13 @@ describe('loadCausalEngineConfig', () => {
       };`,
     );
 
-    const engine = await loadCausalEngineConfig(dir);
+    const engine = await loadPakisoEngineConfig(dir);
     expect(typeof engine.replayRun).toBe('function');
   });
 
-  it('loads a default-exported factory function returning a CausalEngine', async () => {
+  it('loads a default-exported factory function returning a PakisoEngine', async () => {
     await writeFile(
-      join(dir, 'causal.config.mjs'),
+      join(dir, 'pakiso.config.mjs'),
       `export default () => ({
         registerWorkflow() {},
         startWorkflow() {},
@@ -43,13 +43,13 @@ describe('loadCausalEngineConfig', () => {
       });`,
     );
 
-    const engine = await loadCausalEngineConfig(dir);
+    const engine = await loadPakisoEngineConfig(dir);
     expect(typeof engine.replayRun).toBe('function');
   });
 
-  it('falls back to causal.config.js when .mjs is absent', async () => {
+  it('falls back to pakiso.config.js when .mjs is absent', async () => {
     await writeFile(
-      join(dir, 'causal.config.js'),
+      join(dir, 'pakiso.config.js'),
       `export default {
         registerWorkflow() {},
         startWorkflow() {},
@@ -59,21 +59,21 @@ describe('loadCausalEngineConfig', () => {
       };`,
     );
 
-    const engine = await loadCausalEngineConfig(dir);
+    const engine = await loadPakisoEngineConfig(dir);
     expect(typeof engine.replayRun).toBe('function');
   });
 
   it('throws when no config file exists', async () => {
-    await expect(loadCausalEngineConfig(dir)).rejects.toThrow(
-      `No causal.config.{mjs,js} found in ${dir}`,
+    await expect(loadPakisoEngineConfig(dir)).rejects.toThrow(
+      `No pakiso.config.{mjs,js} found in ${dir}`,
     );
   });
 
-  it('throws when the default export is not a valid CausalEngine', async () => {
-    await writeFile(join(dir, 'causal.config.mjs'), 'export default { notAnEngine: true };');
+  it('throws when the default export is not a valid PakisoEngine', async () => {
+    await writeFile(join(dir, 'pakiso.config.mjs'), 'export default { notAnEngine: true };');
 
-    await expect(loadCausalEngineConfig(dir)).rejects.toThrow(
-      'must default-export a CausalEngine instance',
+    await expect(loadPakisoEngineConfig(dir)).rejects.toThrow(
+      'must default-export a PakisoEngine instance',
     );
   });
 });

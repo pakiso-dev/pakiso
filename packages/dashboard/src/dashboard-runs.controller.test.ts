@@ -1,6 +1,6 @@
-import type { CausalStorageAdapter } from '@causal/core';
-import { InMemoryStorageAdapter } from '@causal/core';
 import { NotFoundException, NotImplementedException } from '@nestjs/common';
+import type { PakisoStorageAdapter } from '@pakiso/core';
+import { InMemoryStorageAdapter } from '@pakiso/core';
 import { describe, expect, it } from 'vitest';
 import { DashboardRunsController } from './dashboard-runs.controller.js';
 
@@ -24,9 +24,9 @@ describe('DashboardRunsController', () => {
   });
 
   it('throws NotImplementedException when the adapter does not implement listRuns', async () => {
-    // A minimal adapter satisfying CausalStorageAdapter without listRuns —
+    // A minimal adapter satisfying PakisoStorageAdapter without listRuns —
     // simulates a custom BYOS adapter that never implemented the optional method.
-    const storageWithoutListRuns: CausalStorageAdapter = {
+    const storageWithoutListRuns: PakisoStorageAdapter = {
       async createOrGetRun(params) {
         return {
           run: {

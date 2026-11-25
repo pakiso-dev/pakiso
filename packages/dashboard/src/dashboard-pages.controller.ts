@@ -1,6 +1,6 @@
-import type { CausalRunStatus, CausalStorageAdapter } from '@causal/core';
-import { CAUSAL_STORAGE_ADAPTER } from '@causal/nest';
 import { Controller, Get, Header, Inject, Param, Query } from '@nestjs/common';
+import type { PakisoRunStatus, PakisoStorageAdapter } from '@pakiso/core';
+import { PAKISO_STORAGE_ADAPTER } from '@pakiso/nest';
 import { DASHBOARD_MOUNT_PATH } from './constants.js';
 import { renderHtmlShell } from './html-shell.js';
 import { toWireEvent, toWireRun } from './serialize-run.js';
@@ -9,7 +9,7 @@ import type { ListRunsFilter, PageData } from './wire-types.js';
 
 interface ListRunsQuery {
   workflowName?: string;
-  status?: CausalRunStatus;
+  status?: PakisoRunStatus;
   cursor?: string;
 }
 
@@ -30,7 +30,7 @@ interface ListRunsQuery {
  */
 @Controller(DASHBOARD_MOUNT_PATH)
 export class DashboardPagesController {
-  constructor(@Inject(CAUSAL_STORAGE_ADAPTER) private readonly storage: CausalStorageAdapter) {}
+  constructor(@Inject(PAKISO_STORAGE_ADAPTER) private readonly storage: PakisoStorageAdapter) {}
 
   @Get()
   @Header('Content-Type', 'text/html; charset=utf-8')

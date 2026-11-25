@@ -1,22 +1,22 @@
-# Causal
+# Pakiso
 
 A stateful, deterministic, auditable execution framework for Node.js and NestJS with
 Bring-Your-Own-Storage (BYOS), human/policy attestation gates, and local trace replay.
 
-See [docs/causal_implementation_plan.md](./docs/causal_implementation_plan.md) for the
+See [docs/pakiso_implementation_plan.md](./docs/pakiso_implementation_plan.md) for the
 full architecture, contracts, and phased roadmap.
 
 ## Packages
 
 | Package                                          | Description                                                      |
 | ------------------------------------------------- | ------------------------------------------------------------------ |
-| [`@causal/core`](./packages/core)                 | Zero-dependency deterministic execution engine (BYOS, replay, encryption) |
-| [`@causal/nest`](./packages/nest)                 | NestJS module, decorators, discovery, REST control-plane helpers |
-| [`@causal/storage-prisma`](./packages/storage-prisma) | Multi-dialect Prisma storage adapter (Postgres/MySQL/SQLite)      |
-| [`@causal/cli`](./packages/cli)                   | Developer CLI (`causal init` / `causal inspect` / `causal replay`) |
-| [`@causal/dashboard`](./packages/dashboard)       | Embeddable NestJS dashboard: browse runs and view their full event journals from your live app |
-| [`@causal/example-api`](./packages/example-api)   | Example NestJS app: a durable user-onboarding workflow with email/compliance attestation gates |
-| [`@causal/docs`](./packages/docs)                 | Public developer documentation site (VitePress) |
+| [`@pakiso/core`](./packages/core)                 | Zero-dependency deterministic execution engine (BYOS, replay, encryption) |
+| [`@pakiso/nest`](./packages/nest)                 | NestJS module, decorators, discovery, REST control-plane helpers |
+| [`@pakiso/storage-prisma`](./packages/storage-prisma) | Multi-dialect Prisma storage adapter (Postgres/MySQL/SQLite)      |
+| [`@pakiso/cli`](./packages/cli)                   | Developer CLI (`pakiso init` / `pakiso inspect` / `pakiso replay`) |
+| [`@pakiso/dashboard`](./packages/dashboard)       | Embeddable NestJS dashboard: browse runs and view their full event journals from your live app |
+| [`@pakiso/example-api`](./packages/example-api)   | Example NestJS app: a durable user-onboarding workflow with email/compliance attestation gates |
+| [`@pakiso/docs`](./packages/docs)                 | Public developer documentation site (VitePress) |
 
 ## Development
 

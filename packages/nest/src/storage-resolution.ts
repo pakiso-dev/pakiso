@@ -1,24 +1,24 @@
-import { Aes256GcmPayloadCodec, CodedStorageAdapter } from '@causal/core';
-import type { CausalStorageAdapter, PayloadCodec } from '@causal/core';
-import type { CausalModuleOptions } from './types.js';
+import { Aes256GcmPayloadCodec, CodedStorageAdapter } from '@pakiso/core';
+import type { PakisoStorageAdapter, PayloadCodec } from '@pakiso/core';
+import type { PakisoModuleOptions } from './types.js';
 
-const ENCRYPTION_KEY_ENV = 'CAUSAL_ENCRYPTION_KEY';
-const ENCRYPTION_KEY_ID_ENV = 'CAUSAL_ENCRYPTION_KEY_ID';
+const ENCRYPTION_KEY_ENV = 'PAKISO_ENCRYPTION_KEY';
+const ENCRYPTION_KEY_ID_ENV = 'PAKISO_ENCRYPTION_KEY_ID';
 const DEFAULT_ENCRYPTION_KEY_ID = 'default';
 
 /**
- * Resolves `CausalModuleOptions.storage` (an instance or zero-argument
+ * Resolves `PakisoModuleOptions.storage` (an instance or zero-argument
  * constructor) into a concrete adapter, wrapping it in `CodedStorageAdapter`
- * when an explicit `codec` is supplied, or when `CAUSAL_ENCRYPTION_KEY` is
+ * when an explicit `codec` is supplied, or when `PAKISO_ENCRYPTION_KEY` is
  * set in the environment (defaulting to AES-256-GCM).
  */
-export function resolveStorageAdapter(options: CausalModuleOptions): CausalStorageAdapter {
+export function resolveStorageAdapter(options: PakisoModuleOptions): PakisoStorageAdapter {
   const base = instantiateStorage(options.storage);
   const codec = options.codec ?? createDefaultCodecFromEnv();
   return codec ? new CodedStorageAdapter(base, codec) : base;
 }
 
-function instantiateStorage(storage: CausalModuleOptions['storage']): CausalStorageAdapter {
+function instantiateStorage(storage: PakisoModuleOptions['storage']): PakisoStorageAdapter {
   return typeof storage === 'function' ? new storage() : storage;
 }
 

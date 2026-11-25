@@ -2,10 +2,10 @@
  * BYOS (Bring-Your-Own-Storage) contract. The core runtime owns execution
  * semantics while delegating persistence to this adapter interface, so any
  * database (Prisma, Drizzle, TypeORM, DynamoDB, Redis, ...) can back a
- * Causal run as long as it satisfies these guarantees.
+ * Pakiso run as long as it satisfies these guarantees.
  */
 
-export type CausalRunStatus =
+export type PakisoRunStatus =
   | 'PENDING'
   | 'RUNNING'
   | 'WAITING_ATTESTATION'
@@ -13,7 +13,7 @@ export type CausalRunStatus =
   | 'FAILED'
   | 'CANCELLED';
 
-export type CausalEventType =
+export type PakisoEventType =
   | 'WORKFLOW_STARTED'
   | 'STEP_COMPLETED'
   | 'ATTESTATION_REQUESTED'
@@ -22,7 +22,7 @@ export type CausalEventType =
   | 'WORKFLOW_FAILED'
   | 'WORKFLOW_CANCELLED';
 
-export interface CausalRunRecord<
+export interface PakisoRunRecord<
   TInput = Record<string, unknown>,
   TOutput = Record<string, unknown>,
 > {
@@ -30,7 +30,7 @@ export interface CausalRunRecord<
   workflowName: string;
   correlationKey: string | null;
   idempotencyKey: string | null;
-  status: CausalRunStatus;
+  status: PakisoRunStatus;
   input: TInput;
   output: TOutput | null;
   error: string | null;
@@ -44,11 +44,11 @@ export interface CausalRunRecord<
   attestationExpiresAt: Date | null;
 }
 
-export interface CausalEventRecord<TPayload = Record<string, unknown>> {
+export interface PakisoEventRecord<TPayload = Record<string, unknown>> {
   id: string;
   runId: string;
   seq: number;
-  type: CausalEventType;
+  type: PakisoEventType;
   stepName: string | null;
   /** Wall-clock execution time in milliseconds for STEP_COMPLETED events; null for all other event types */
   durationMs: number | null;
@@ -67,7 +67,7 @@ export interface AppendEventParams {
   runId: string;
   /** Optimistic concurrency guard: adapter MUST reject if latest seq !== expectedSeq */
   expectedSeq: number;
-  type: CausalEventType;
+  type: PakisoEventType;
   stepName?: string;
   /** Wall-clock execution time in milliseconds, measured by ctx.step() around fn() */
   durationMs?: number;
@@ -76,7 +76,7 @@ export interface AppendEventParams {
 
 export interface UpdateRunStatusParams {
   runId: string;
-  status: CausalRunStatus;
+  status: PakisoRunStatus;
   output?: Record<string, unknown> | null;
   error?: string | null;
   /** Set alongside a transition to WAITING_ATTESTATION when the gate has a deadline; cleared (null) otherwise */
@@ -98,7 +98,7 @@ export interface ReleaseLeaseParams {
 
 export interface ListRunsParams {
   workflowName?: string;
-  status?: CausalRunStatus;
+  status?: PakisoRunStatus;
   /** Opaque cursor from a previous `ListRunsResult.nextCursor`; omit to fetch the first page. */
   cursor?: string;
   /** Max runs to return; adapters should apply a sane default (e.g. 20) when omitted. */
@@ -107,31 +107,31 @@ export interface ListRunsParams {
 
 export interface ListRunsResult {
   /** Ordered most-recently-created first. */
-  runs: CausalRunRecord[];
+  runs: PakisoRunRecord[];
   /** Pass as `cursor` to fetch the next page; null when there are no more runs. */
   nextCursor: string | null;
 }
 
-export interface CausalStorageAdapter {
+export interface PakisoStorageAdapter {
   connect?(): Promise<void>;
   disconnect?(): Promise<void>;
 
-  createOrGetRun(params: CreateRunParams): Promise<{ run: CausalRunRecord; created: boolean }>;
+  createOrGetRun(params: CreateRunParams): Promise<{ run: PakisoRunRecord; created: boolean }>;
 
-  getRun(runId: string): Promise<CausalRunRecord | null>;
+  getRun(runId: string): Promise<PakisoRunRecord | null>;
 
   getLatestRunByCorrelationKey(
     workflowName: string,
     correlationKey: string,
-  ): Promise<CausalRunRecord | null>;
+  ): Promise<PakisoRunRecord | null>;
 
   /** Must return events strictly ordered ascending by `seq` (1..N) */
-  getEvents(runId: string): Promise<CausalEventRecord[]>;
+  getEvents(runId: string): Promise<PakisoEventRecord[]>;
 
   /** Must enforce `expectedSeq` atomically and assign `seq = expectedSeq + 1` */
-  appendEvent(params: AppendEventParams): Promise<CausalEventRecord>;
+  appendEvent(params: AppendEventParams): Promise<PakisoEventRecord>;
 
-  updateRunStatus(params: UpdateRunStatusParams): Promise<CausalRunRecord>;
+  updateRunStatus(params: UpdateRunStatusParams): Promise<PakisoRunRecord>;
 
   /**
    * Attempts to acquire an exclusive execution lease on a run, so two
@@ -152,7 +152,7 @@ export interface CausalStorageAdapter {
    * auto-escalate/expire overdue approvals. Optional; adapters that omit it
    * simply don't support deadline enforcement.
    */
-  findExpiredWaitingRuns?(now: Date): Promise<CausalRunRecord[]>;
+  findExpiredWaitingRuns?(now: Date): Promise<PakisoRunRecord[]>;
 
   /**
    * Permanently deletes every run (and its events) in a terminal state

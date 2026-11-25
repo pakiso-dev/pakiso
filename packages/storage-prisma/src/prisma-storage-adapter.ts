@@ -1,22 +1,22 @@
 import {
   type AcquireLeaseParams,
   type AppendEventParams,
-  type CausalEventRecord,
-  type CausalEventType,
-  type CausalRunRecord,
-  type CausalRunStatus,
-  type CausalStorageAdapter,
   ConcurrencyConflictError,
   type CreateRunParams,
   type ListRunsParams,
   type ListRunsResult,
+  type PakisoEventRecord,
+  type PakisoEventType,
+  type PakisoRunRecord,
+  type PakisoRunStatus,
+  type PakisoStorageAdapter,
   type ReleaseLeaseParams,
   type UpdateRunStatusParams,
-} from '@causal/core';
+} from '@pakiso/core';
 
 const DEFAULT_LIST_RUNS_LIMIT = 20;
 
-interface CausalRunRow {
+interface PakisoRunRow {
   id: string;
   workflowName: string;
   correlationKey: string | null;
@@ -30,7 +30,7 @@ interface CausalRunRow {
   attestationExpiresAt: Date | null;
 }
 
-interface CausalEventRow {
+interface PakisoEventRow {
   id: string;
   runId: string;
   seq: number;
@@ -52,20 +52,20 @@ interface CausalEventRow {
  * surface — only the operations actually used — is satisfied by any of the
  * three generated clients.
  */
-export interface PrismaCausalClient {
+export interface PrismaPakisoClient {
   $connect(): Promise<void>;
   $disconnect(): Promise<void>;
-  causalRun: {
-    findUnique(args: { where: Record<string, unknown> }): Promise<CausalRunRow | null>;
+  pakisoRun: {
+    findUnique(args: { where: Record<string, unknown> }): Promise<PakisoRunRow | null>;
     findFirst(args: {
       where: Record<string, unknown>;
       orderBy: Record<string, unknown>;
-    }): Promise<CausalRunRow | null>;
-    create(args: { data: Record<string, unknown> }): Promise<CausalRunRow>;
+    }): Promise<PakisoRunRow | null>;
+    create(args: { data: Record<string, unknown> }): Promise<PakisoRunRow>;
     update(args: {
       where: Record<string, unknown>;
       data: Record<string, unknown>;
-    }): Promise<CausalRunRow>;
+    }): Promise<PakisoRunRow>;
     updateMany(args: {
       where: Record<string, unknown>;
       data: Record<string, unknown>;
@@ -76,19 +76,19 @@ export interface PrismaCausalClient {
       take?: number;
       skip?: number;
       cursor?: { id: string };
-    }): Promise<CausalRunRow[]>;
+    }): Promise<PakisoRunRow[]>;
     deleteMany(args: { where: Record<string, unknown> }): Promise<{ count: number }>;
   };
-  causalEvent: {
+  pakisoEvent: {
     findMany(args: {
       where: Record<string, unknown>;
       orderBy: Record<string, unknown>;
-    }): Promise<CausalEventRow[]>;
+    }): Promise<PakisoEventRow[]>;
     aggregate(args: {
       where: Record<string, unknown>;
       _max: { seq: true };
     }): Promise<{ _max: { seq: number | null } }>;
-    create(args: { data: Record<string, unknown> }): Promise<CausalEventRow>;
+    create(args: { data: Record<string, unknown> }): Promise<PakisoEventRow>;
     deleteMany(args: { where: Record<string, unknown> }): Promise<{ count: number }>;
   };
 }
@@ -113,13 +113,13 @@ function isUniqueConstraintViolation(error: unknown): boolean {
   );
 }
 
-function mapRun(row: CausalRunRow): CausalRunRecord {
+function mapRun(row: PakisoRunRow): PakisoRunRecord {
   return {
     id: row.id,
     workflowName: row.workflowName,
     correlationKey: row.correlationKey,
     idempotencyKey: row.idempotencyKey,
-    status: row.status as CausalRunStatus,
+    status: row.status as PakisoRunStatus,
     input: row.input as Record<string, unknown>,
     output: row.output as Record<string, unknown> | null,
     error: row.error,
@@ -129,12 +129,12 @@ function mapRun(row: CausalRunRow): CausalRunRecord {
   };
 }
 
-function mapEvent(row: CausalEventRow): CausalEventRecord {
+function mapEvent(row: PakisoEventRow): PakisoEventRecord {
   return {
     id: row.id,
     runId: row.runId,
     seq: row.seq,
-    type: row.type as CausalEventType,
+    type: row.type as PakisoEventType,
     stepName: row.stepName,
     durationMs: row.durationMs,
     payload: row.payload as Record<string, unknown>,
@@ -149,14 +149,14 @@ function byIdempotencyKey(workflowName: string, idempotencyKey: string) {
 }
 
 /**
- * CausalStorageAdapter backed by a generated Prisma Client. Works against
+ * PakisoStorageAdapter backed by a generated Prisma Client. Works against
  * any dialect (PostgreSQL, MySQL, SQLite) generated from the matching schema
- * in `prisma/` via the reduced `PrismaCausalClient` contract above — pass in
+ * in `prisma/` via the reduced `PrismaPakisoClient` contract above — pass in
  * whichever dialect-specific `PrismaClient` instance matches your
- * `CAUSAL_DATABASE_URL`.
+ * `PAKISO_DATABASE_URL`.
  */
-export class PrismaStorageAdapter implements CausalStorageAdapter {
-  constructor(private readonly prisma: PrismaCausalClient) {}
+export class PrismaStorageAdapter implements PakisoStorageAdapter {
+  constructor(private readonly prisma: PrismaPakisoClient) {}
 
   async connect(): Promise<void> {
     await this.prisma.$connect();
@@ -168,9 +168,9 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
 
   async createOrGetRun(
     params: CreateRunParams,
-  ): Promise<{ run: CausalRunRecord; created: boolean }> {
+  ): Promise<{ run: PakisoRunRecord; created: boolean }> {
     if (params.idempotencyKey) {
-      const existing = await this.prisma.causalRun.findUnique({
+      const existing = await this.prisma.pakisoRun.findUnique({
         where: byIdempotencyKey(params.workflowName, params.idempotencyKey),
       });
       if (existing) {
@@ -179,7 +179,7 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
     }
 
     try {
-      const created = await this.prisma.causalRun.create({
+      const created = await this.prisma.pakisoRun.create({
         data: {
           workflowName: params.workflowName,
           correlationKey: params.correlationKey ?? null,
@@ -193,7 +193,7 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
     } catch (error) {
       // Race: another writer created the same idempotencyKey between our check and create.
       if (params.idempotencyKey && isUniqueConstraintViolation(error)) {
-        const existing = await this.prisma.causalRun.findUnique({
+        const existing = await this.prisma.pakisoRun.findUnique({
           where: byIdempotencyKey(params.workflowName, params.idempotencyKey),
         });
         if (existing) {
@@ -204,16 +204,16 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
     }
   }
 
-  async getRun(runId: string): Promise<CausalRunRecord | null> {
-    const row = await this.prisma.causalRun.findUnique({ where: { id: runId } });
+  async getRun(runId: string): Promise<PakisoRunRecord | null> {
+    const row = await this.prisma.pakisoRun.findUnique({ where: { id: runId } });
     return row ? mapRun(row) : null;
   }
 
   async getLatestRunByCorrelationKey(
     workflowName: string,
     correlationKey: string,
-  ): Promise<CausalRunRecord | null> {
-    const row = await this.prisma.causalRun.findFirst({
+  ): Promise<PakisoRunRecord | null> {
+    const row = await this.prisma.pakisoRun.findFirst({
       where: { workflowName, correlationKey },
       // `id` is a UUIDv7 (time-ordered), so sorting by it is equivalent to
       // "most recently created" with far finer precision than `createdAt`,
@@ -223,16 +223,16 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
     return row ? mapRun(row) : null;
   }
 
-  async getEvents(runId: string): Promise<CausalEventRecord[]> {
-    const rows = await this.prisma.causalEvent.findMany({
+  async getEvents(runId: string): Promise<PakisoEventRecord[]> {
+    const rows = await this.prisma.pakisoEvent.findMany({
       where: { runId },
       orderBy: { seq: 'asc' },
     });
     return rows.map(mapEvent);
   }
 
-  async appendEvent(params: AppendEventParams): Promise<CausalEventRecord> {
-    const latest = await this.prisma.causalEvent.aggregate({
+  async appendEvent(params: AppendEventParams): Promise<PakisoEventRecord> {
+    const latest = await this.prisma.pakisoEvent.aggregate({
       where: { runId: params.runId },
       _max: { seq: true },
     });
@@ -242,7 +242,7 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
     }
 
     try {
-      const created = await this.prisma.causalEvent.create({
+      const created = await this.prisma.pakisoEvent.create({
         data: {
           runId: params.runId,
           seq: params.expectedSeq + 1,
@@ -264,8 +264,8 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
     }
   }
 
-  async updateRunStatus(params: UpdateRunStatusParams): Promise<CausalRunRecord> {
-    const updated = await this.prisma.causalRun.update({
+  async updateRunStatus(params: UpdateRunStatusParams): Promise<PakisoRunRecord> {
+    const updated = await this.prisma.pakisoRun.update({
       where: { id: params.runId },
       data: {
         status: params.status,
@@ -279,8 +279,8 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
     return mapRun(updated);
   }
 
-  async findExpiredWaitingRuns(now: Date): Promise<CausalRunRecord[]> {
-    const rows = await this.prisma.causalRun.findMany({
+  async findExpiredWaitingRuns(now: Date): Promise<PakisoRunRecord[]> {
+    const rows = await this.prisma.pakisoRun.findMany({
       where: { status: 'WAITING_ATTESTATION', attestationExpiresAt: { lte: now } },
     });
     return rows.map(mapRun);
@@ -290,7 +290,7 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
     const limit = params.limit ?? DEFAULT_LIST_RUNS_LIMIT;
     // Fetch one extra row to detect whether a further page exists, without a
     // separate count query.
-    const rows = await this.prisma.causalRun.findMany({
+    const rows = await this.prisma.pakisoRun.findMany({
       where: {
         ...(params.workflowName !== undefined ? { workflowName: params.workflowName } : {}),
         ...(params.status !== undefined ? { status: params.status } : {}),
@@ -313,7 +313,7 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
   }
 
   async purgeCompletedRunsOlderThan(olderThan: Date): Promise<number> {
-    const toPurge = await this.prisma.causalRun.findMany({
+    const toPurge = await this.prisma.pakisoRun.findMany({
       where: {
         status: { in: ['COMPLETED', 'FAILED', 'CANCELLED'] },
         updatedAt: { lte: olderThan },
@@ -324,11 +324,11 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
     }
 
     const runIds = toPurge.map((run) => run.id);
-    // Events must be deleted first: the FK from CausalEvent -> CausalRun
+    // Events must be deleted first: the FK from PakisoEvent -> PakisoRun
     // defaults to RESTRICT, so deleting a run while its events still exist
     // would fail.
-    await this.prisma.causalEvent.deleteMany({ where: { runId: { in: runIds } } });
-    await this.prisma.causalRun.deleteMany({ where: { id: { in: runIds } } });
+    await this.prisma.pakisoEvent.deleteMany({ where: { runId: { in: runIds } } });
+    await this.prisma.pakisoRun.deleteMany({ where: { id: { in: runIds } } });
     return runIds.length;
   }
 
@@ -340,7 +340,7 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
     // conditional WHERE clause is the atomicity guarantee here, not a
     // separate transaction: a concurrent racer's updateMany simply matches
     // zero rows once this one commits.
-    const result = await this.prisma.causalRun.updateMany({
+    const result = await this.prisma.pakisoRun.updateMany({
       where: {
         id: params.runId,
         OR: [{ lockedBy: null }, { leaseExpiresAt: { lt: now } }, { lockedBy: params.leaseOwner }],
@@ -351,7 +351,7 @@ export class PrismaStorageAdapter implements CausalStorageAdapter {
   }
 
   async releaseLease(params: ReleaseLeaseParams): Promise<void> {
-    await this.prisma.causalRun.updateMany({
+    await this.prisma.pakisoRun.updateMany({
       where: { id: params.runId, lockedBy: params.leaseOwner },
       data: { lockedBy: null, leaseExpiresAt: null },
     });

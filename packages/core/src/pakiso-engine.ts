@@ -1,21 +1,21 @@
 import { randomUUID } from 'node:crypto';
 import { SpanStatusCode, context as otelContext, trace } from '@opentelemetry/api';
-import { type PendingSignal, createCausalContext, runWithCausalContext } from './causal-context.js';
 import { LeaseConflictError, WorkflowSuspendedError } from './errors.js';
+import { type PendingSignal, createPakisoContext, runWithPakisoContext } from './pakiso-context.js';
 import type {
-  CausalEngine,
+  PakisoEngine,
   SignalWorkflowParams,
   StartWorkflowParams,
   WorkflowHandler,
 } from './runtime.js';
-import type { CausalRunRecord, CausalStorageAdapter } from './storage.js';
+import type { PakisoRunRecord, PakisoStorageAdapter } from './storage.js';
 
-const tracer = trace.getTracer('@causal/core');
+const tracer = trace.getTracer('@pakiso/core');
 
 const DEFAULT_LEASE_DURATION_MS = 30_000;
 
-export interface InProcessCausalEngineOptions {
-  storage: CausalStorageAdapter;
+export interface InProcessPakisoEngineOptions {
+  storage: PakisoStorageAdapter;
   /**
    * Identifies this engine instance when acquiring execution leases (e.g. a
    * hostname+pid or a UUID per replica). Defaults to a random UUID generated
@@ -34,19 +34,19 @@ interface ExecutionPassOptions {
 }
 
 /**
- * Default CausalEngine implementation. Executes workflow handlers in-process
- * against a BYOS CausalStorageAdapter, re-running the handler from the top on
+ * Default PakisoEngine implementation. Executes workflow handlers in-process
+ * against a BYOS PakisoStorageAdapter, re-running the handler from the top on
  * every resume — `ctx.step()`/`ctx.awaitAttestation()` short-circuit on
  * already-recorded journal entries so completed side effects are never
  * repeated; only genuinely new work actually executes.
  */
-export class InProcessCausalEngine implements CausalEngine {
-  private readonly storage: CausalStorageAdapter;
+export class InProcessPakisoEngine implements PakisoEngine {
+  private readonly storage: PakisoStorageAdapter;
   private readonly handlers = new Map<string, WorkflowHandler>();
   private readonly leaseOwner: string;
   private readonly leaseDurationMs: number;
 
-  constructor(options: InProcessCausalEngineOptions) {
+  constructor(options: InProcessPakisoEngineOptions) {
     this.storage = options.storage;
     this.leaseOwner = options.leaseOwner ?? randomUUID();
     this.leaseDurationMs = options.leaseDurationMs ?? DEFAULT_LEASE_DURATION_MS;
@@ -58,7 +58,7 @@ export class InProcessCausalEngine implements CausalEngine {
 
   async startWorkflow<TInput extends Record<string, unknown>>(
     params: StartWorkflowParams<TInput>,
-  ): Promise<CausalRunRecord> {
+  ): Promise<PakisoRunRecord> {
     const handler = this.requireHandler(params.workflowName);
     const { run, created } = await this.storage.createOrGetRun({
       workflowName: params.workflowName,
@@ -107,7 +107,7 @@ export class InProcessCausalEngine implements CausalEngine {
     await this.resume(run, signal);
   }
 
-  async replayRun(runId: string, stubs?: Record<string, unknown>): Promise<CausalRunRecord> {
+  async replayRun(runId: string, stubs?: Record<string, unknown>): Promise<PakisoRunRecord> {
     const run = await this.storage.getRun(runId);
     if (!run) {
       throw new Error(`Cannot replay: unknown run "${runId}"`);
@@ -115,7 +115,7 @@ export class InProcessCausalEngine implements CausalEngine {
     const handler = this.requireHandler(run.workflowName);
     const events = await this.storage.getEvents(run.id);
 
-    const { context } = createCausalContext({
+    const { context } = createPakisoContext({
       runId: run.id,
       workflowName: run.workflowName,
       correlationKey: run.correlationKey,
@@ -126,17 +126,17 @@ export class InProcessCausalEngine implements CausalEngine {
       ...(stubs !== undefined ? { stubs } : {}),
     });
 
-    const span = tracer.startSpan('causal.workflow.replay', {
+    const span = tracer.startSpan('pakiso.workflow.replay', {
       attributes: {
-        'causal.run_id': run.id,
-        'causal.workflow_name': run.workflowName,
-        ...(run.correlationKey ? { 'causal.correlation_key': run.correlationKey } : {}),
+        'pakiso.run_id': run.id,
+        'pakiso.workflow_name': run.workflowName,
+        ...(run.correlationKey ? { 'pakiso.correlation_key': run.correlationKey } : {}),
       },
     });
 
     try {
       const output = await otelContext.with(trace.setSpan(otelContext.active(), span), () =>
-        runWithCausalContext(context, () => handler(run.input, context)),
+        runWithPakisoContext(context, () => handler(run.input, context)),
       );
       span.setStatus({ code: SpanStatusCode.OK });
       // Reflects what this replay pass actually produced (including any stub
@@ -146,7 +146,7 @@ export class InProcessCausalEngine implements CausalEngine {
     } catch (error) {
       // A still-suspended run replaying cleanly up to its last recorded gate is expected, not a failure.
       if (error instanceof WorkflowSuspendedError) {
-        span.setAttribute('causal.suspended', true);
+        span.setAttribute('pakiso.suspended', true);
         span.setStatus({ code: SpanStatusCode.OK });
         return { ...run, status: 'WAITING_ATTESTATION' };
       }
@@ -166,13 +166,13 @@ export class InProcessCausalEngine implements CausalEngine {
    * don't double-expire the same run; runs whose lease is currently held by
    * another worker are skipped (they're presumably already being handled).
    */
-  async expireOverdueAttestations(now: Date = new Date()): Promise<CausalRunRecord[]> {
+  async expireOverdueAttestations(now: Date = new Date()): Promise<PakisoRunRecord[]> {
     if (!this.storage.findExpiredWaitingRuns) {
       return [];
     }
 
     const expired = await this.storage.findExpiredWaitingRuns(now);
-    const results: CausalRunRecord[] = [];
+    const results: PakisoRunRecord[] = [];
 
     for (const run of expired) {
       const leaseAcquired = await this.acquireLease(run.id);
@@ -207,7 +207,7 @@ export class InProcessCausalEngine implements CausalEngine {
   }
 
   private async resume<TPayload extends Record<string, unknown>>(
-    run: CausalRunRecord,
+    run: PakisoRunRecord,
     signal: SignalWorkflowParams<TPayload>,
   ): Promise<void> {
     if (run.status !== 'WAITING_ATTESTATION') {
@@ -244,10 +244,10 @@ export class InProcessCausalEngine implements CausalEngine {
   }
 
   private async executeRun(
-    run: CausalRunRecord,
+    run: PakisoRunRecord,
     handler: WorkflowHandler,
     passOptions: ExecutionPassOptions,
-  ): Promise<CausalRunRecord> {
+  ): Promise<PakisoRunRecord> {
     const leaseAcquired = await this.acquireLease(run.id);
     if (!leaseAcquired) {
       throw new LeaseConflictError(run.id, this.leaseOwner);
@@ -279,12 +279,12 @@ export class InProcessCausalEngine implements CausalEngine {
   }
 
   private async executeRunLocked(
-    run: CausalRunRecord,
+    run: PakisoRunRecord,
     handler: WorkflowHandler,
     passOptions: ExecutionPassOptions,
-  ): Promise<CausalRunRecord> {
+  ): Promise<PakisoRunRecord> {
     const events = await this.storage.getEvents(run.id);
-    const { context, getNextExpectedSeq } = createCausalContext({
+    const { context, getNextExpectedSeq } = createPakisoContext({
       runId: run.id,
       workflowName: run.workflowName,
       correlationKey: run.correlationKey,
@@ -293,17 +293,17 @@ export class InProcessCausalEngine implements CausalEngine {
       ...passOptions,
     });
 
-    const span = tracer.startSpan('causal.workflow.execute', {
+    const span = tracer.startSpan('pakiso.workflow.execute', {
       attributes: {
-        'causal.run_id': run.id,
-        'causal.workflow_name': run.workflowName,
-        ...(run.correlationKey ? { 'causal.correlation_key': run.correlationKey } : {}),
+        'pakiso.run_id': run.id,
+        'pakiso.workflow_name': run.workflowName,
+        ...(run.correlationKey ? { 'pakiso.correlation_key': run.correlationKey } : {}),
       },
     });
 
     try {
       const output = await otelContext.with(trace.setSpan(otelContext.active(), span), () =>
-        runWithCausalContext(context, () => handler(run.input, context)),
+        runWithPakisoContext(context, () => handler(run.input, context)),
       );
 
       await this.storage.appendEvent({
@@ -321,7 +321,7 @@ export class InProcessCausalEngine implements CausalEngine {
       });
     } catch (error) {
       if (error instanceof WorkflowSuspendedError) {
-        span.setAttribute('causal.suspended', true);
+        span.setAttribute('pakiso.suspended', true);
         span.setStatus({ code: SpanStatusCode.OK });
         return await this.storage.updateRunStatus({
           runId: run.id,

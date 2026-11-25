@@ -1,4 +1,4 @@
-import type { CausalEventRecord, CausalRunRecord, ListRunsFilter, PageData } from './types.js';
+import type { ListRunsFilter, PageData, PakisoEventRecord, PakisoRunRecord } from './types.js';
 
 /**
  * Fetch helpers used only for client-side navigation after hydration (the
@@ -6,16 +6,16 @@ import type { CausalEventRecord, CausalRunRecord, ListRunsFilter, PageData } fro
  * adapter — see `DashboardPagesController` — so these hit the separate JSON
  * API, `DashboardRunsController`, instead).
  */
-const API_BASE = '/causal-dashboard/api';
+const API_BASE = '/pakiso-dashboard/api';
 
 interface ListRunsApiResult {
-  runs: CausalRunRecord[];
+  runs: PakisoRunRecord[];
   nextCursor: string | null;
 }
 
 interface RunDetailApiResult {
-  run: CausalRunRecord;
-  events: CausalEventRecord[];
+  run: PakisoRunRecord;
+  events: PakisoEventRecord[];
 }
 
 async function parseJsonOrThrow<T>(response: Response): Promise<T> {

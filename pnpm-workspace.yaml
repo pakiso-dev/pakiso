@@ -9,6 +9,6 @@ allowBuilds:
   esbuild: true
   prisma: true
   # Scarf is an install-time telemetry/analytics ping (transitive dependency
-  # pulled in by the new @causal/docs VitePress toolchain); deny its
+  # pulled in by the new @pakiso/docs VitePress toolchain); deny its
   # postinstall script rather than running arbitrary telemetry code.
   '@scarf/scarf': false

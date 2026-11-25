@@ -12,7 +12,7 @@ describe('Aes256GcmPayloadCodec', () => {
     const plain = { orderId: 'ORD-1', amount: 42, nested: { pii: 'secret' } };
 
     const encoded = await codec.encode(plain);
-    expect(encoded.__causalEnc).toBe(true);
+    expect(encoded.__pakisoEnc).toBe(true);
     expect(encoded.ciphertext).not.toContain('ORD-1');
 
     const decoded = await codec.decode(encoded);
@@ -100,7 +100,7 @@ describe('Aes256GcmPayloadCodec', () => {
 
       expect(() => codec.forgetKey('never-registered')).not.toThrow();
       // encode() under the still-active key is unaffected.
-      await expect(codec.encode({ a: 1 })).resolves.toMatchObject({ __causalEnc: true });
+      await expect(codec.encode({ a: 1 })).resolves.toMatchObject({ __pakisoEnc: true });
     });
   });
 });

@@ -1,6 +1,6 @@
 /**
- * JSON-safe ("wire") shapes mirroring `@causal/core`'s `CausalRunRecord`/
- * `CausalEventRecord` (with `Date` fields serialized to ISO strings), plus
+ * JSON-safe ("wire") shapes mirroring `@pakiso/core`'s `PakisoRunRecord`/
+ * `PakisoEventRecord` (with `Date` fields serialized to ISO strings), plus
  * the discriminated union describing what the dashboard's SSR renderer
  * draws for a given request. Defined once here (not duplicated in
  * `frontend/`) and re-exported through `frontend/src/types.ts` — Vite's
@@ -10,7 +10,7 @@
  * emits JS from it.
  */
 
-export type CausalRunStatus =
+export type PakisoRunStatus =
   | 'PENDING'
   | 'RUNNING'
   | 'WAITING_ATTESTATION'
@@ -18,12 +18,12 @@ export type CausalRunStatus =
   | 'FAILED'
   | 'CANCELLED';
 
-export interface WireCausalRunRecord {
+export interface WirePakisoRunRecord {
   id: string;
   workflowName: string;
   correlationKey: string | null;
   idempotencyKey: string | null;
-  status: CausalRunStatus;
+  status: PakisoRunStatus;
   input: Record<string, unknown>;
   output: Record<string, unknown> | null;
   error: string | null;
@@ -32,7 +32,7 @@ export interface WireCausalRunRecord {
   attestationExpiresAt: string | null;
 }
 
-export interface WireCausalEventRecord {
+export interface WirePakisoEventRecord {
   id: string;
   runId: string;
   seq: number;
@@ -45,17 +45,17 @@ export interface WireCausalEventRecord {
 
 export interface ListRunsFilter {
   workflowName?: string;
-  status?: CausalRunStatus;
+  status?: PakisoRunStatus;
 }
 
 export type PageData =
   | {
       type: 'list';
-      runs: WireCausalRunRecord[];
+      runs: WirePakisoRunRecord[];
       nextCursor: string | null;
       filter: ListRunsFilter;
-      /** Set when the configured CausalStorageAdapter doesn't implement `listRuns()`. */
+      /** Set when the configured PakisoStorageAdapter doesn't implement `listRuns()`. */
       unsupported?: boolean;
     }
-  | { type: 'detail'; run: WireCausalRunRecord; events: WireCausalEventRecord[] }
+  | { type: 'detail'; run: WirePakisoRunRecord; events: WirePakisoEventRecord[] }
   | { type: 'not-found'; runId: string };

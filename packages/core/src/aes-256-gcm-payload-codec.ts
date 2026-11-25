@@ -52,7 +52,7 @@ export class Aes256GcmPayloadCodec implements PayloadCodec {
     const tag = cipher.getAuthTag();
 
     const envelope: EncryptedEnvelope = {
-      __causalEnc: true,
+      __pakisoEnc: true,
       kid: this.activeKid,
       iv: iv.toString('base64'),
       tag: tag.toString('base64'),
@@ -110,7 +110,7 @@ function isEncryptedEnvelope(
   value: Record<string, unknown>,
 ): value is Record<string, unknown> & EncryptedEnvelope {
   return (
-    value.__causalEnc === true &&
+    value.__pakisoEnc === true &&
     typeof value.kid === 'string' &&
     typeof value.iv === 'string' &&
     typeof value.tag === 'string' &&

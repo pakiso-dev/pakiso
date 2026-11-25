@@ -1,9 +1,9 @@
 import pc from 'picocolors';
-import { loadCausalEngineConfig } from '../config-loader.js';
+import { loadPakisoEngineConfig } from '../config-loader.js';
 
 /**
  * Replays a recorded run locally against the project's real workflow
- * handlers (loaded from `causal.config.{mjs,js}`), optionally overriding
+ * handlers (loaded from `pakiso.config.{mjs,js}`), optionally overriding
  * specific steps' results via `stubs` to reproduce bugs deterministically
  * without re-triggering real side effects.
  */
@@ -12,7 +12,7 @@ export async function runReplay(
   stubs: Record<string, unknown>,
   cwd: string = process.cwd(),
 ): Promise<void> {
-  const engine = await loadCausalEngineConfig(cwd);
+  const engine = await loadPakisoEngineConfig(cwd);
   const run = await engine.replayRun(runId, stubs);
 
   console.log(pc.green(`✔ Replay completed for run ${run.id}`));

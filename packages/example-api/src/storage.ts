@@ -1,12 +1,12 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import type { CausalStorageAdapter } from '@causal/core';
-import { InMemoryStorageAdapter } from '@causal/core';
-import type { PrismaCausalClient } from '@causal/storage-prisma';
-import { PrismaStorageAdapter } from '@causal/storage-prisma';
+import type { PakisoStorageAdapter } from '@pakiso/core';
+import { InMemoryStorageAdapter } from '@pakiso/core';
+import type { PrismaPakisoClient } from '@pakiso/storage-prisma';
+import { PrismaStorageAdapter } from '@pakiso/storage-prisma';
 
 interface GeneratedSqliteClientModule {
-  PrismaClient: new (options: { datasourceUrl: string }) => PrismaCausalClient;
+  PrismaClient: new (options: { datasourceUrl: string }) => PrismaPakisoClient;
 }
 
 const generatedClientPath = join(
@@ -18,19 +18,19 @@ const generatedClientPath = join(
 );
 
 /**
- * Resolves the `CausalStorageAdapter` this app runs with. Defaults to the
+ * Resolves the `PakisoStorageAdapter` this app runs with. Defaults to the
  * zero-config `InMemoryStorageAdapter` (state is lost on restart); set
- * `CAUSAL_DATABASE_URL` (e.g. `file:/absolute/path/to/dev.db`) to persist
- * runs via `@causal/storage-prisma`/SQLite instead — handy for inspecting
+ * `PAKISO_DATABASE_URL` (e.g. `file:/absolute/path/to/dev.db`) to persist
+ * runs via `@pakiso/storage-prisma`/SQLite instead — handy for inspecting
  * runs afterwards with `prisma studio --schema=prisma/schema.prisma`.
  *
- * Mirrors `@causal/cli`'s `createStorageAdapterFromEnv()`: the generated
+ * Mirrors `@pakiso/cli`'s `createStorageAdapterFromEnv()`: the generated
  * client path is computed (not a string literal import) so bundlers don't
  * try to statically resolve/inline a module that may not exist yet (run
  * `pnpm generate:sqlite` first).
  */
-export async function resolveExampleStorage(): Promise<CausalStorageAdapter> {
-  const databaseUrl = process.env.CAUSAL_DATABASE_URL;
+export async function resolveExampleStorage(): Promise<PakisoStorageAdapter> {
+  const databaseUrl = process.env.PAKISO_DATABASE_URL;
   if (!databaseUrl) {
     return new InMemoryStorageAdapter();
   }
@@ -42,7 +42,7 @@ export async function resolveExampleStorage(): Promise<CausalStorageAdapter> {
     )) as GeneratedSqliteClientModule;
   } catch {
     throw new Error(
-      `No generated Prisma client found at ${generatedClientPath}. Run "pnpm --filter @causal/example-api generate:sqlite" first.`,
+      `No generated Prisma client found at ${generatedClientPath}. Run "pnpm --filter @pakiso/example-api generate:sqlite" first.`,
     );
   }
 

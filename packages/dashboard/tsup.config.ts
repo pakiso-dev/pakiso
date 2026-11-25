@@ -7,5 +7,5 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   target: 'node18',
-  external: ['@causal/nest', '@nestjs/common', '@nestjs/core', 'reflect-metadata', 'rxjs'],
+  external: ['@pakiso/nest', '@nestjs/common', '@nestjs/core', 'reflect-metadata', 'rxjs'],
 });

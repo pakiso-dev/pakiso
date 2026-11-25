@@ -4,12 +4,12 @@ import pc from 'picocolors';
 import { runInit } from './commands/init.js';
 import { runInspect } from './commands/inspect.js';
 import { runReplay } from './commands/replay.js';
-import { CAUSAL_CLI_VERSION } from './index.js';
+import { PAKISO_CLI_VERSION } from './index.js';
 import { collectStub } from './stub-parser.js';
 
 const program = new Command();
 
-program.name('causal').description('Causal developer CLI').version(CAUSAL_CLI_VERSION);
+program.name('pakiso').description('Pakiso developer CLI').version(PAKISO_CLI_VERSION);
 
 function withErrorHandling<TArgs extends unknown[]>(
   fn: (...args: TArgs) => Promise<void>,
@@ -28,19 +28,19 @@ function withErrorHandling<TArgs extends unknown[]>(
 program
   .command('init')
   .description(
-    'Auto-detect the dialect from CAUSAL_DATABASE_URL, generate the Prisma client, and apply the schema',
+    'Auto-detect the dialect from PAKISO_DATABASE_URL, generate the Prisma client, and apply the schema',
   )
   .action(withErrorHandling(runInit));
 
 program
   .command('inspect <runId>')
-  .description("Inspect a workflow run's event journal (reads CAUSAL_DATABASE_URL)")
+  .description("Inspect a workflow run's event journal (reads PAKISO_DATABASE_URL)")
   .action(withErrorHandling(runInspect));
 
 program
   .command('replay <runId>')
   .description(
-    'Replay a recorded run locally against causal.config.{mjs,js}, with optional step stubs',
+    'Replay a recorded run locally against pakiso.config.{mjs,js}, with optional step stubs',
   )
   .option(
     '--stub <assignment>',

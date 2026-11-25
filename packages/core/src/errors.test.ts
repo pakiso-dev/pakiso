@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CausalDivergenceError,
   ConcurrencyConflictError,
+  PakisoDivergenceError,
   WorkflowSuspendedError,
 } from './errors.js';
 
@@ -17,18 +17,18 @@ describe('ConcurrencyConflictError', () => {
   });
 });
 
-describe('CausalDivergenceError', () => {
+describe('PakisoDivergenceError', () => {
   it('carries runId/seq/expected/actual step and formats a descriptive message', () => {
-    const err = new CausalDivergenceError('run-1', 2, 'charge-card', 'reserve-inventory');
+    const err = new PakisoDivergenceError('run-1', 2, 'charge-card', 'reserve-inventory');
 
     expect(err).toBeInstanceOf(Error);
-    expect(err.name).toBe('CausalDivergenceError');
+    expect(err.name).toBe('PakisoDivergenceError');
     expect(err.runId).toBe('run-1');
     expect(err.seq).toBe(2);
     expect(err.expectedStep).toBe('charge-card');
     expect(err.actualStep).toBe('reserve-inventory');
     expect(err.message).toBe(
-      'Causal divergence on run "run-1" at seq 2: expected "charge-card", got "reserve-inventory"',
+      'Pakiso divergence on run "run-1" at seq 2: expected "charge-card", got "reserve-inventory"',
     );
   });
 });

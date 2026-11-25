@@ -8,7 +8,7 @@ export default defineConfig({
   clean: true,
   target: 'node18',
   external: [
-    '@causal/storage-prisma',
+    '@pakiso/storage-prisma',
     '@nestjs/common',
     '@nestjs/core',
     '@nestjs/platform-express',

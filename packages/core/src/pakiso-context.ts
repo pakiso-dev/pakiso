@@ -1,27 +1,27 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import { SpanStatusCode, trace } from '@opentelemetry/api';
-import { CausalDivergenceError, WorkflowSuspendedError } from './errors.js';
-import type { AttestationOptions, CausalContext, StepOptions } from './runtime.js';
-import type { CausalEventRecord, CausalEventType, CausalStorageAdapter } from './storage.js';
+import { PakisoDivergenceError, WorkflowSuspendedError } from './errors.js';
+import type { AttestationOptions, PakisoContext, StepOptions } from './runtime.js';
+import type { PakisoEventRecord, PakisoEventType, PakisoStorageAdapter } from './storage.js';
 
-const tracer = trace.getTracer('@causal/core');
+const tracer = trace.getTracer('@pakiso/core');
 
-const causalContextStorage = new AsyncLocalStorage<CausalContext>();
+const pakisoContextStorage = new AsyncLocalStorage<PakisoContext>();
 
 /**
- * Returns the CausalContext for the workflow run currently executing on this
+ * Returns the PakisoContext for the workflow run currently executing on this
  * async call stack, if any. Lets deeply nested helpers (e.g. a service method
  * invoked from inside a step's callback) observe `isReplaying`/`runId`
  * without needing `ctx` threaded through every call site explicitly.
  */
-export function getCurrentCausalContext(): CausalContext | undefined {
-  return causalContextStorage.getStore();
+export function getCurrentPakisoContext(): PakisoContext | undefined {
+  return pakisoContextStorage.getStore();
 }
 
-/** Runs `fn` with `ctx` bound as the ambient CausalContext for its entire async extent. */
-export function runWithCausalContext<T>(ctx: CausalContext, fn: () => Promise<T>): Promise<T> {
-  return causalContextStorage.run(ctx, fn);
+/** Runs `fn` with `ctx` bound as the ambient PakisoContext for its entire async extent. */
+export function runWithPakisoContext<T>(ctx: PakisoContext, fn: () => Promise<T>): Promise<T> {
+  return pakisoContextStorage.run(ctx, fn);
 }
 
 export interface PendingSignal {
@@ -29,17 +29,17 @@ export interface PendingSignal {
   payload: Record<string, unknown>;
 }
 
-export interface CreateCausalContextOptions {
+export interface CreatePakisoContextOptions {
   runId: string;
   workflowName: string;
   correlationKey: string | null;
   /** Events already recorded for this run, ascending by seq, captured at the start of this pass */
-  events: CausalEventRecord[];
-  storage: CausalStorageAdapter;
+  events: PakisoEventRecord[];
+  storage: PakisoStorageAdapter;
   /**
    * Whether this pass may append brand-new events beyond the captured
    * `events` snapshot. True for live execution (fresh start or resuming
-   * after a signal); false for `causal replay`, where anything beyond the
+   * after a signal); false for `pakiso replay`, where anything beyond the
    * recorded journal is a divergence rather than new work.
    */
   allowNewEvents: boolean;
@@ -51,16 +51,16 @@ export interface CreateCausalContextOptions {
   stubs?: Record<string, unknown>;
 }
 
-export interface CreatedCausalContext {
-  context: CausalContext;
+export interface CreatedPakisoContext {
+  context: PakisoContext;
   /** The expectedSeq to use for a terminal WORKFLOW_COMPLETED/WORKFLOW_FAILED event once the handler settles */
   getNextExpectedSeq: () => number;
 }
 
-const NOW_STEP_NAME = '__causal_now__';
-const UUID_STEP_NAME = '__causal_uuid__';
+const NOW_STEP_NAME = '__pakiso_now__';
+const UUID_STEP_NAME = '__pakiso_uuid__';
 
-export function createCausalContext(options: CreateCausalContextOptions): CreatedCausalContext {
+export function createPakisoContext(options: CreatePakisoContextOptions): CreatedPakisoContext {
   const {
     runId,
     workflowName,
@@ -86,11 +86,11 @@ export function createCausalContext(options: CreateCausalContextOptions): Create
   let nextSeq = events.length;
 
   async function recordNewEvent(
-    type: CausalEventType,
+    type: PakisoEventType,
     stepName: string,
     payload: Record<string, unknown>,
     durationMs?: number,
-  ): Promise<CausalEventRecord> {
+  ): Promise<PakisoEventRecord> {
     const event = await storage.appendEvent({
       runId,
       expectedSeq: nextSeq,
@@ -111,7 +111,7 @@ export function createCausalContext(options: CreateCausalContextOptions): Create
     const recorded = ctxEvents[cursor];
     if (recorded) {
       if (recorded.type !== 'STEP_COMPLETED' || recorded.stepName !== stepName) {
-        throw new CausalDivergenceError(
+        throw new PakisoDivergenceError(
           runId,
           recorded.seq,
           recorded.stepName ?? '(unknown)',
@@ -132,9 +132,9 @@ export function createCausalContext(options: CreateCausalContextOptions): Create
       const historicalSpan = tracer.startSpan(stepName, {
         startTime,
         attributes: {
-          'causal.run_id': runId,
-          'causal.step_name': stepName,
-          'causal.replayed': true,
+          'pakiso.run_id': runId,
+          'pakiso.step_name': stepName,
+          'pakiso.replayed': true,
         },
       });
       historicalSpan.end(endTime);
@@ -147,15 +147,15 @@ export function createCausalContext(options: CreateCausalContextOptions): Create
     }
 
     if (!allowNewEvents) {
-      throw new CausalDivergenceError(runId, nextSeq + 1, '(end of recorded journal)', stepName);
+      throw new PakisoDivergenceError(runId, nextSeq + 1, '(end of recorded journal)', stepName);
     }
 
     const stubResult = isReplaying ? stepOptions?.stubResult : undefined;
     const span = tracer.startSpan(stepName, {
       attributes: {
-        'causal.run_id': runId,
-        'causal.step_name': stepName,
-        'causal.replayed': false,
+        'pakiso.run_id': runId,
+        'pakiso.step_name': stepName,
+        'pakiso.replayed': false,
       },
     });
 
@@ -184,7 +184,7 @@ export function createCausalContext(options: CreateCausalContextOptions): Create
     const requested = ctxEvents[cursor];
     if (requested) {
       if (requested.type !== 'ATTESTATION_REQUESTED' || requested.stepName !== gateName) {
-        throw new CausalDivergenceError(
+        throw new PakisoDivergenceError(
           runId,
           requested.seq,
           requested.stepName ?? '(unknown)',
@@ -213,7 +213,7 @@ export function createCausalContext(options: CreateCausalContextOptions): Create
     }
 
     if (!allowNewEvents) {
-      throw new CausalDivergenceError(runId, nextSeq + 1, '(end of recorded journal)', gateName);
+      throw new PakisoDivergenceError(runId, nextSeq + 1, '(end of recorded journal)', gateName);
     }
 
     await recordNewEvent('ATTESTATION_REQUESTED', gateName, {
@@ -223,7 +223,7 @@ export function createCausalContext(options: CreateCausalContextOptions): Create
     throw new WorkflowSuspendedError(runId, gateName, attestationOptions?.expiresAt ?? null);
   }
 
-  const context: CausalContext = {
+  const context: PakisoContext = {
     runId,
     workflowName,
     correlationKey,

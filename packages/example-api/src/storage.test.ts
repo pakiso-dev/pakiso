@@ -1,8 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { InMemoryStorageAdapter } from '@causal/core';
-import { PrismaStorageAdapter } from '@causal/storage-prisma';
+import { InMemoryStorageAdapter } from '@pakiso/core';
+import { PrismaStorageAdapter } from '@pakiso/storage-prisma';
 import { afterEach, describe, expect, it } from 'vitest';
 import { resolveExampleStorage } from './storage.js';
 
@@ -11,27 +11,27 @@ const dbPath = fileURLToPath(new URL('../generated/sqlite/storage.test.db', impo
 const databaseUrl = `file:${dbPath}`;
 
 describe('resolveExampleStorage', () => {
-  const originalDatabaseUrl = process.env.CAUSAL_DATABASE_URL;
+  const originalDatabaseUrl = process.env.PAKISO_DATABASE_URL;
 
   afterEach(() => {
     if (originalDatabaseUrl === undefined) {
       // biome-ignore lint/performance/noDelete: process.env requires delete; assigning undefined stringifies to "undefined"
-      delete process.env.CAUSAL_DATABASE_URL;
+      delete process.env.PAKISO_DATABASE_URL;
     } else {
-      process.env.CAUSAL_DATABASE_URL = originalDatabaseUrl;
+      process.env.PAKISO_DATABASE_URL = originalDatabaseUrl;
     }
   });
 
-  it('defaults to InMemoryStorageAdapter when CAUSAL_DATABASE_URL is unset', async () => {
+  it('defaults to InMemoryStorageAdapter when PAKISO_DATABASE_URL is unset', async () => {
     // biome-ignore lint/performance/noDelete: process.env requires delete; assigning undefined stringifies to "undefined"
-    delete process.env.CAUSAL_DATABASE_URL;
+    delete process.env.PAKISO_DATABASE_URL;
 
     const storage = await resolveExampleStorage();
 
     expect(storage).toBeInstanceOf(InMemoryStorageAdapter);
   });
 
-  it('persists via PrismaStorageAdapter/SQLite when CAUSAL_DATABASE_URL is set', async () => {
+  it('persists via PrismaStorageAdapter/SQLite when PAKISO_DATABASE_URL is set', async () => {
     if (existsSync(dbPath)) {
       rmSync(dbPath);
     }
@@ -40,11 +40,11 @@ describe('resolveExampleStorage', () => {
       ['prisma', 'db', 'push', '--schema=prisma/schema.prisma', '--skip-generate', '--force-reset'],
       {
         cwd: packageRoot,
-        env: { ...process.env, CAUSAL_DATABASE_URL: databaseUrl },
+        env: { ...process.env, PAKISO_DATABASE_URL: databaseUrl },
         stdio: 'pipe',
       },
     );
-    process.env.CAUSAL_DATABASE_URL = databaseUrl;
+    process.env.PAKISO_DATABASE_URL = databaseUrl;
 
     const storage = await resolveExampleStorage();
     try {

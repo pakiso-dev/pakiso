@@ -5,5 +5,5 @@ export * from './errors.js';
 export * from './in-memory-storage-adapter.js';
 export * from './aes-256-gcm-payload-codec.js';
 export * from './coded-storage-adapter.js';
-export * from './causal-context.js';
-export * from './causal-engine.js';
+export * from './pakiso-context.js';
+export * from './pakiso-engine.js';

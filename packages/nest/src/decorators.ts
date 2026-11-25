@@ -1,23 +1,23 @@
-import { getCurrentCausalContext } from '@causal/core';
 import { SetMetadata } from '@nestjs/common';
-import { CAUSAL_WORKFLOW_METADATA } from './constants.js';
+import { getCurrentPakisoContext } from '@pakiso/core';
+import { PAKISO_WORKFLOW_METADATA } from './constants.js';
 import type { WorkflowDecoratorOptions } from './types.js';
 
 /**
- * Marks a provider method as a Causal workflow handler. `WorkflowExplorer`
+ * Marks a provider method as a Pakiso workflow handler. `WorkflowExplorer`
  * discovers every `@Workflow()`-decorated method across all providers at
- * bootstrap and registers it with the `CausalEngine` under `options.name`.
+ * bootstrap and registers it with the `PakisoEngine` under `options.name`.
  * The decorated method must match the `WorkflowHandler` signature:
  * `(input, ctx) => Promise<output>`.
  */
 export function Workflow(options: WorkflowDecoratorOptions): MethodDecorator {
-  return SetMetadata(CAUSAL_WORKFLOW_METADATA, options);
+  return SetMetadata(PAKISO_WORKFLOW_METADATA, options);
 }
 
 /**
  * Wraps a provider method so each invocation is automatically recorded as a
  * `ctx.step()` whenever it runs inside an active workflow (detected via the
- * ambient CausalContext from `getCurrentCausalContext()`). Outside of a
+ * ambient PakisoContext from `getCurrentPakisoContext()`). Outside of a
  * workflow run, the method behaves exactly as if undecorated.
  */
 export function Recordable(): MethodDecorator {
@@ -27,8 +27,8 @@ export function Recordable(): MethodDecorator {
       return descriptor;
     }
 
-    descriptor.value = function causalRecordable(this: unknown, ...args: unknown[]) {
-      const ctx = getCurrentCausalContext();
+    descriptor.value = function pakisoRecordable(this: unknown, ...args: unknown[]) {
+      const ctx = getCurrentPakisoContext();
       if (!ctx) {
         return original.apply(this, args);
       }

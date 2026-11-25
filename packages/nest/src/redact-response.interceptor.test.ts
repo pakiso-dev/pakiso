@@ -1,9 +1,9 @@
-import { InMemoryStorageAdapter } from '@causal/core';
 import type { CallHandler, ExecutionContext } from '@nestjs/common';
+import { InMemoryStorageAdapter } from '@pakiso/core';
 import { lastValueFrom, of } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 import { RedactResponseInterceptor } from './redact-response.interceptor.js';
-import type { CausalModuleOptions } from './types.js';
+import type { PakisoModuleOptions } from './types.js';
 
 function createCallHandler(body: unknown): CallHandler {
   return { handle: () => of(body) };
@@ -11,7 +11,7 @@ function createCallHandler(body: unknown): CallHandler {
 
 describe('RedactResponseInterceptor', () => {
   it('redacts sensitive fields from an object response body using module redactFields', async () => {
-    const options: CausalModuleOptions = {
+    const options: PakisoModuleOptions = {
       storage: new InMemoryStorageAdapter(),
       redactFields: ['internalNote'],
     };
@@ -32,7 +32,7 @@ describe('RedactResponseInterceptor', () => {
   });
 
   it('passes through non-object response bodies unchanged', async () => {
-    const options: CausalModuleOptions = { storage: new InMemoryStorageAdapter() };
+    const options: PakisoModuleOptions = { storage: new InMemoryStorageAdapter() };
     const interceptor = new RedactResponseInterceptor(options);
 
     const arrayResult = await lastValueFrom(

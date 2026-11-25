@@ -1,6 +1,6 @@
-# @causal/docs
+# @pakiso/docs
 
-Public developer documentation site for Causal, built with
+Public developer documentation site for Pakiso, built with
 [VitePress](https://vitepress.dev).
 
 Content lives as plain Markdown under this directory (`introduction.md`,
@@ -13,9 +13,9 @@ navigation and the prev/next pager on every page.
 ## Development
 
 ```bash
-pnpm --filter @causal/docs dev      # serve locally with hot reload
-pnpm --filter @causal/docs build    # build the static site into dist/
-pnpm --filter @causal/docs preview  # preview the built site
+pnpm --filter @pakiso/docs dev      # serve locally with hot reload
+pnpm --filter @pakiso/docs build    # build the static site into dist/
+pnpm --filter @pakiso/docs preview  # preview the built site
 ```
 
 Or, from the repo root:

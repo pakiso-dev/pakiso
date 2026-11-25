@@ -1,43 +1,43 @@
-# @causal/dashboard
+# @pakiso/dashboard
 
 An embeddable NestJS module that mounts a read-only, **server-rendered React**
-dashboard — plus the JSON API behind it — for browsing Causal runs and their
+dashboard — plus the JSON API behind it — for browsing Pakiso runs and their
 full event journals, straight from your live app.
 
 ```bash
-pnpm add @causal/dashboard
+pnpm add @pakiso/dashboard
 ```
 
 ```ts
-import { CausalModule } from '@causal/nest';
-import { CausalDashboardModule } from '@causal/dashboard';
+import { PakisoModule } from '@pakiso/nest';
+import { PakisoDashboardModule } from '@pakiso/dashboard';
 
 @Module({
   imports: [
-    CausalModule.forRoot({ storage /* ... */ }),
-    CausalDashboardModule,
+    PakisoModule.forRoot({ storage /* ... */ }),
+    PakisoDashboardModule,
   ],
 })
 export class AppModule {}
 ```
 
-Visit `http://your-app/causal-dashboard` to browse runs (filterable by
+Visit `http://your-app/pakiso-dashboard` to browse runs (filterable by
 workflow name/status) and drill into a run's full event journal — the same
-`seq`/`type`/`step-gate`/`durationMs`/`createdAt` columns `causal inspect`
+`seq`/`type`/`step-gate`/`durationMs`/`createdAt` columns `pakiso inspect`
 prints, in a browser. Every page load is server-rendered with real data
 (verifiable with `curl` — no JavaScript required), then hydrated by React for
 fast client-side navigation between the list and detail views afterwards.
 
 ## Requirements
 
-- `CausalModule.forRoot()`/`forRootAsync()` must already be registered
+- `PakisoModule.forRoot()`/`forRootAsync()` must already be registered
   elsewhere in the app — this module reuses its global
-  `CAUSAL_STORAGE_ADAPTER` provider rather than configuring its own, so the
+  `PAKISO_STORAGE_ADAPTER` provider rather than configuring its own, so the
   dashboard always reflects exactly what the live app's engine is operating
   on.
-- Your `CausalStorageAdapter` must implement the optional `listRuns()`
+- Your `PakisoStorageAdapter` must implement the optional `listRuns()`
   method for the run-browsing list to work (see
-  [`@causal/core`'s storage contract](../core/src/storage.ts)).
+  [`@pakiso/core`'s storage contract](../core/src/storage.ts)).
   `InMemoryStorageAdapter` and `PrismaStorageAdapter` both implement it; a
   custom BYOS adapter that doesn't will render an in-page message instead
   (the separate JSON API still returns a `501 Not Implemented` for
@@ -47,9 +47,9 @@ fast client-side navigation between the list and detail views afterwards.
 
 This is a **view-only** dashboard: browsing runs and inspecting journals.
 It does not expose any way to signal gates, retry, or cancel runs from the
-UI. Like the rest of Causal, it applies no authentication/authorization of
+UI. Like the rest of Pakiso, it applies no authentication/authorization of
 its own — who may view run data is your application's concern; guard the
-`causal-dashboard` prefix with your own mechanism (a global guard, a
+`pakiso-dashboard` prefix with your own mechanism (a global guard, a
 reverse-proxy rule, etc.) before exposing it outside your team.
 
 ## Architecture
@@ -60,7 +60,7 @@ reverse-proxy rule, etc.) before exposing it outside your team.
   Links/forms are plain `<a>`/`<form method="get">`, so the dashboard works
   with JavaScript disabled.
 - **`DashboardRunsController`** — a separate read-only JSON API
-  (`GET /causal-dashboard/api/runs[/:id]`) used by the client bundle for
+  (`GET /pakiso-dashboard/api/runs[/:id]`) used by the client bundle for
   fast in-page navigation after hydration, and available for any other
   programmatic consumer.
 - **`DashboardAssetsController`** — serves the client hydration bundle +
@@ -72,7 +72,7 @@ reverse-proxy rule, etc.) before exposing it outside your team.
   globs to maintain (the Vite plugin scans the build's module graph itself).
 - React/ReactDOM are regular (non-peer) dependencies of this package —
   purely an implementation detail of how the bundled UI is rendered, like
-  Vue is for `@causal/docs`'s VitePress. Your host app doesn't need React
+  Vue is for `@pakiso/docs`'s VitePress. Your host app doesn't need React
   installed itself.
 
 ## Development

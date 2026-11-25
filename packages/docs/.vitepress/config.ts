@@ -9,15 +9,15 @@ import { defineConfig } from 'vitepress';
 const sidebar = [
   {
     text: 'Introduction',
-    items: [{ text: 'What is Causal?', link: '/introduction' }],
+    items: [{ text: 'What is Pakiso?', link: '/introduction' }],
   },
   {
     text: 'Overview',
     collapsed: false,
     items: [
       { text: 'First steps', link: '/overview/first-steps' },
-      { text: 'Causal engine', link: '/overview/causal-engine' },
-      { text: 'Causal context', link: '/overview/causal-context' },
+      { text: 'Pakiso engine', link: '/overview/pakiso-engine' },
+      { text: 'Pakiso context', link: '/overview/pakiso-context' },
       { text: 'Storage adapters', link: '/overview/storage-adapters' },
       { text: 'Attestation gates', link: '/overview/attestation-gates' },
     ],
@@ -39,7 +39,7 @@ const sidebar = [
     text: 'NestJS integration',
     collapsed: true,
     items: [
-      { text: 'CausalModule', link: '/nestjs/module' },
+      { text: 'PakisoModule', link: '/nestjs/module' },
       { text: 'Decorators', link: '/nestjs/decorators' },
       { text: 'Discovery service', link: '/nestjs/discovery-service' },
       { text: 'REST control plane', link: '/nestjs/rest-control-plane' },
@@ -54,7 +54,7 @@ const sidebar = [
   {
     text: 'CLI',
     collapsed: true,
-    items: [{ text: 'causal init / inspect / replay', link: '/cli/overview' }],
+    items: [{ text: 'pakiso init / inspect / replay', link: '/cli/overview' }],
   },
   {
     text: 'Recipes',
@@ -68,7 +68,7 @@ const sidebar = [
 ];
 
 export default defineConfig({
-  title: 'Causal',
+  title: 'Pakiso',
   description: 'A stateful, deterministic, auditable execution framework for Node.js and NestJS.',
   srcDir: '.',
   srcExclude: ['README.md'],
@@ -83,9 +83,9 @@ export default defineConfig({
       { text: 'Recipes', link: '/recipes/onboarding-walkthrough' },
     ],
     sidebar,
-    socialLinks: [{ icon: 'github', link: 'https://github.com/causal-dev/causal' }],
+    socialLinks: [{ icon: 'github', link: 'https://github.com/pakiso-dev/pakiso' }],
     editLink: {
-      pattern: 'https://github.com/causal-dev/causal/edit/main/packages/docs/:path',
+      pattern: 'https://github.com/pakiso-dev/pakiso/edit/main/packages/docs/:path',
       text: 'Edit this page on GitHub',
     },
     search: {
