@@ -1,5 +1,13 @@
 # @pakiso/nest
 
+## 1.0.1
+
+### Patch Changes
+
+- 2d2cbf1: Add missing `README.md` files for `@pakiso/core` and `@pakiso/nest` — both previously had no README at all, so npm showed "This package does not have a README" on their package pages.
+- Updated dependencies [2d2cbf1]
+  - @pakiso/core@1.0.1
+
 ## 1.0.0
 
 ### Patch Changes
