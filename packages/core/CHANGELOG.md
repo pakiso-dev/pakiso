@@ -1,5 +1,11 @@
 # @pakiso/core
 
+## 1.0.3
+
+### Patch Changes
+
+- f184fa8: Add MIT `LICENSE` file at the repo root and a `license` field to every package's `package.json`. Previously no license was declared, so npm defaulted published packages to showing "Proprietary" on the registry despite the GitHub repo being public.
+
 ## 1.0.2
 
 ### Patch Changes

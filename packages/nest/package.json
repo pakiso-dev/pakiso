@@ -1,6 +1,6 @@
 {
   "name": "@pakiso/nest",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "NestJS integration for Pakiso — PakisoModule, decorators, discovery, and REST control-plane helpers.",
   "license": "MIT",
   "type": "module",

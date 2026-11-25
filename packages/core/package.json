@@ -1,6 +1,6 @@
 {
   "name": "@pakiso/core",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Zero-dependency deterministic execution engine for Pakiso — BYOS storage contract, AsyncLocalStorage context, replay, and payload encryption.",
   "license": "MIT",
   "type": "module",

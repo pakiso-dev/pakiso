@@ -1,6 +1,6 @@
 {
   "name": "@pakiso/cli",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Developer CLI for Pakiso — schema bootstrapping (pakiso init) and local trace replay (pakiso replay/inspect).",
   "license": "MIT",
   "type": "module",

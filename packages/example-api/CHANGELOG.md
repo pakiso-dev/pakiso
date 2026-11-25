@@ -1,5 +1,15 @@
 # @pakiso/example-api
 
+## 1.0.3
+
+### Patch Changes
+
+- Updated dependencies [f184fa8]
+  - @pakiso/core@1.0.3
+  - @pakiso/dashboard@1.0.3
+  - @pakiso/nest@1.0.3
+  - @pakiso/storage-prisma@1.0.3
+
 ## 1.0.2
 
 ### Patch Changes
