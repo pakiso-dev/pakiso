@@ -2,6 +2,7 @@
   "name": "@pakiso/storage-prisma",
   "version": "1.0.2",
   "description": "Multi-dialect Prisma storage adapter for Pakiso (PostgreSQL, MySQL, SQLite).",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

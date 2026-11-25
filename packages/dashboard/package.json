@@ -2,6 +2,7 @@
   "name": "@pakiso/dashboard",
   "version": "1.0.2",
   "description": "Embeddable NestJS dashboard for Pakiso — browse runs and view their full event journals from your live app.",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

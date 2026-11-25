@@ -2,6 +2,7 @@
   "name": "@pakiso/nest",
   "version": "1.0.2",
   "description": "NestJS integration for Pakiso — PakisoModule, decorators, discovery, and REST control-plane helpers.",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

@@ -2,6 +2,7 @@
   "name": "pakiso",
   "private": true,
   "description": "Pakiso — a stateful, deterministic, auditable execution framework for Node.js and NestJS",
+  "license": "MIT",
   "engines": {
     "node": ">=20"
   },
