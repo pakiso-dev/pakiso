@@ -1,3 +1,11 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/logo-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="./docs/assets/logo-light.png">
+    <img alt="Pakiso logo" src="./docs/assets/logo-light.png" width="120">
+  </picture>
+</p>
+
 # Pakiso
 
 A stateful, deterministic, auditable execution framework for Node.js and NestJS with

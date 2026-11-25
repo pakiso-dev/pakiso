@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import pakisoMark from '../assets/pakiso-mark.png';
 
 export function Layout({
   children,
@@ -27,7 +28,7 @@ export function Layout({
             }}
             className="flex items-center gap-2 text-lg font-semibold text-gray-900 hover:text-indigo-600"
           >
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-indigo-600" />
+            <img src={pakisoMark} alt="" className="h-6 w-6" />
             Pakiso Dashboard
           </a>
         </div>

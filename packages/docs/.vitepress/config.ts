@@ -75,8 +75,10 @@ export default defineConfig({
   outDir: 'dist',
   cleanUrls: true,
   lastUpdated: true,
+  head: [['link', { rel: 'icon', type: 'image/png', href: '/favicon.png' }]],
 
   themeConfig: {
+    logo: { light: '/logo-light.png', dark: '/logo-dark.png' },
     nav: [
       { text: 'Guide', link: '/introduction' },
       { text: 'CLI', link: '/cli/overview' },

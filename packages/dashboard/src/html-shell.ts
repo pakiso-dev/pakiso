@@ -18,6 +18,7 @@ export function renderHtmlShell(innerHtml: string, page: PageData): string {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pakiso Dashboard</title>
+    <link rel="icon" type="image/png" href="/${DASHBOARD_MOUNT_PATH}/assets/favicon.png" />
     <link rel="stylesheet" href="/${DASHBOARD_MOUNT_PATH}/assets/main.css" />
   </head>
   <body>
