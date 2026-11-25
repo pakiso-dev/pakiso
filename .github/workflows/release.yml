@@ -46,12 +46,16 @@ jobs:
       # `changeset version` rewrites each bumped package.json with its own
       # JSON formatting, which doesn't match Biome's style (e.g. it expands
       # single-line arrays like `"files": ["dist"]` across multiple lines),
-      # so `pnpm format` re-normalizes the diff before it's committed to the
+      # so the `changeset-version` script (package.json) chains `pnpm
+      # format` to re-normalize the diff before it's committed to the
       # version PR — otherwise `ci.yml`'s Lint step fails on that PR.
+      # changesets/action runs `version` as a single command without a
+      # shell, so `&&` can't be inlined here directly — it must live inside
+      # an actual package.json script instead.
       - name: Create Release Pull Request or Publish
         uses: changesets/action@v1
         with:
-          version: pnpm changeset version && pnpm format
+          version: pnpm run changeset-version
           publish: pnpm release
           commit: "chore: version packages"
           title: "chore: version packages"

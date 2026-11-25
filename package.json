@@ -13,6 +13,7 @@
     "format": "biome format --write .",
     "typecheck": "turbo run typecheck",
     "changeset": "changeset",
+    "changeset-version": "changeset version && pnpm format",
     "release": "turbo run build && changeset publish",
     "docs:dev": "pnpm --filter @pakiso/docs dev",
     "docs:build": "pnpm --filter @pakiso/docs build"
