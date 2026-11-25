@@ -1,6 +1,6 @@
 {
   "name": "@pakiso/example-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Example NestJS API demonstrating Pakiso: a durable user-onboarding workflow with email-verification and compliance-approval attestation gates.",
   "type": "module",

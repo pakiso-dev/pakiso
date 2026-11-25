@@ -1,6 +1,6 @@
 {
   "name": "@pakiso/dashboard",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Embeddable NestJS dashboard for Pakiso — browse runs and view their full event journals from your live app.",
   "type": "module",
   "main": "./dist/index.cjs",
