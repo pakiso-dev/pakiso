@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { PakisoDashboardModule } from '@pakiso/dashboard';
 import { PakisoModule } from '@pakiso/nest';
 import { OnboardingModule } from './onboarding/onboarding.module.js';
+import { RefundAgentModule } from './refund-agent/refund-agent.module.js';
 import { resolveExampleStorage } from './storage.js';
 
 @Module({
@@ -19,6 +20,7 @@ import { resolveExampleStorage } from './storage.js';
       }),
     }),
     OnboardingModule,
+    RefundAgentModule,
     // Browse runs and their full event journals at /pakiso-dashboard — see
     // @pakiso/dashboard's README for the production auth/scope caveats.
     PakisoDashboardModule,

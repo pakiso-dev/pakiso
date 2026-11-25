@@ -25,6 +25,11 @@ const sidebar = [
     ],
   },
   {
+    text: 'Use cases',
+    collapsed: true,
+    items: [{ text: 'AI agents & human-in-the-loop', link: '/use-cases/ai-agents' }],
+  },
+  {
     text: 'Fundamentals',
     collapsed: true,
     items: [
@@ -61,7 +66,10 @@ const sidebar = [
   {
     text: 'Recipes',
     collapsed: true,
-    items: [{ text: 'Durable user-onboarding workflow', link: '/recipes/onboarding-walkthrough' }],
+    items: [
+      { text: 'Durable user-onboarding workflow', link: '/recipes/onboarding-walkthrough' },
+      { text: 'Durable support-refund agent', link: '/recipes/refund-agent-walkthrough' },
+    ],
   },
   {
     text: 'FAQ',

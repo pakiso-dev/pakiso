@@ -33,7 +33,7 @@ is durably recorded, so the function can be **resumed** after a crash or
 | [`@pakiso/nest`](/nestjs/module) | NestJS module, decorators, discovery, REST control-plane helpers |
 | [`@pakiso/storage-prisma`](/storage/prisma-adapter) | Multi-dialect Prisma storage adapter (Postgres/MySQL/SQLite) |
 | [`@pakiso/cli`](/cli/overview) | Developer CLI (`pakiso init` / `pakiso inspect` / `pakiso replay`) |
-| `@pakiso/example-api` | Example NestJS app: see the [onboarding recipe](/recipes/onboarding-walkthrough) |
+| `@pakiso/example-api` | Example NestJS app: see the [onboarding](/recipes/onboarding-walkthrough) and [refund agent](/recipes/refund-agent-walkthrough) recipes |
 
 #### What Pakiso does (and doesn't) store
 
