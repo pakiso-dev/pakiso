@@ -5,7 +5,7 @@
   "description": "Example NestJS API demonstrating Pakiso: a durable user-onboarding workflow with email-verification and compliance-approval attestation gates.",
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "generate:sqlite": "prisma generate --schema=prisma/schema.prisma",

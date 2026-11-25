@@ -6,7 +6,7 @@ export default defineConfig({
   dts: false,
   sourcemap: true,
   clean: true,
-  target: 'node18',
+  target: 'node20',
   external: [
     '@pakiso/storage-prisma',
     '@nestjs/common',

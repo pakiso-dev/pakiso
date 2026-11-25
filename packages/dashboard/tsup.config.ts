@@ -6,6 +6,6 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
-  target: 'node18',
+  target: 'node20',
   external: ['@pakiso/nest', '@nestjs/common', '@nestjs/core', 'reflect-metadata', 'rxjs'],
 });

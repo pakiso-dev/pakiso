@@ -17,7 +17,7 @@
   "files": ["dist", "prisma"],
   "sideEffects": false,
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "generate:sqlite": "prisma generate --schema=prisma/sqlite.prisma",

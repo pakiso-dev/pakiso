@@ -3,7 +3,7 @@
   "private": true,
   "description": "Pakiso — a stateful, deterministic, auditable execution framework for Node.js and NestJS",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "packageManager": "pnpm@12.23.0",
   "scripts": {
